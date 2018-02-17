@@ -1,0 +1,20 @@
+prefix = _{"0x"}
+natdigit = _{ '1'..'9' }
+digit = _{ '0'..'9' }
+hex = _{ '0' .. '9' | 'a' .. 'f' | 'A' .. 'F'}
+
+comma = _{ "," }
+
+db = {"DB"}
+resb = {"RESB"}
+num = { natdigit ~ digit* }
+hex2 = {hex ~ hex}
+hex_lit = _{ prefix ~ hex2 }
+
+whitespace = _{ " " | "\r" | "\n" | "\t" }
+
+db_exp = _{ db ~ (hex_lit ~ comma)* ~ hex_lit }
+resb_exp = _{ resb ~ num }
+
+exp = _{ whitespace* ~ (db_exp | resb_exp) ~ whitespace* }
+
