@@ -1,12 +1,11 @@
 alpha    = _{ 'a' .. 'z' | 'A' .. 'Z' }
 comma    = _{ "," }
 dquate   = _{ "\"" }
-dollar   =  { "$" }
+dollar   = _{ "$" }
 hyphen   = _{ "-" }
 underbar = _{ "_" }
 space    = _{ " " }
 ws       = _{ " " | "\r" | "\n" | "\t" }
-
 
 //a hex number: 0x10, 0x3456, 0x9090AABB
 prefix  = _{ "0x" }
@@ -18,16 +17,16 @@ prehex2 = _{ prefix ~ hex2 }
 prehex4 = _{ prefix ~ hex4 }
 prehex8 = _{ prefix ~ hex8 }
 
-//数字 123, 443
+//number 123, 443
 natdigit = _{ '1'..'9' }
 digit    = _{ '0'..'9' }
-num = { natdigit ~ digit* }
+num = { natdigit ~ digit* | "0" }
 
 //DB 0xaa, 0xfa, 0xa2
 //DB "HELLO OS"
 //DB 1  -> DB 0x01
 db = {"DB"}
-str     =  { (alpha | space | underbar)* }
+str     =  { (alpha | space | underbar | comma | hyphen | digit)* }
 string  = _{ dquate ~ str ~ dquate } 
 db_exp  = _{ db ~ ws* ~
     ((prehex2 ~ ws* ~ comma ~ ws*)* ~ prehex2 | string | num) } 
@@ -47,10 +46,10 @@ dd_exp  = _{ dd ~ ws* ~ (prehex8 | num) }
 
 resb = {"RESB"}
 resb_exp = _{ resb ~ ws* ~ 
-    ( num  | prehex4 ~ ws* ~ (hyphen ~ ws* ~ dollar)?) }
+    (prehex4 ~ ws* ~ hyphen ~ ws* ~ dollar | num )}
 
 
 exp = _{ ws* ~ 
-    (db_exp | dw_exp | dd_exp | resb_exp)
+    (db_exp | dw_exp | dd_exp | resb_exp)*
         ~ ws* }
 
