@@ -1,20 +1,56 @@
-prefix = _{"0x"}
+alpha    = _{ 'a' .. 'z' | 'A' .. 'Z' }
+comma    = _{ "," }
+dquate   = _{ "\"" }
+dollar   =  { "$" }
+hyphen   = _{ "-" }
+underbar = _{ "_" }
+space    = _{ " " }
+ws       = _{ " " | "\r" | "\n" | "\t" }
+
+
+//a hex number: 0x10, 0x3456, 0x9090AABB
+prefix  = _{ "0x" }
+hex     = _{ '0'..'9' | 'a'..'f' | 'A'..'F'}
+hex2    =  { hex  ~ hex }
+hex4    =  { hex2 ~ hex2 }
+hex8    =  { hex4 ~ hex4 }
+prehex2 = _{ prefix ~ hex2 }
+prehex4 = _{ prefix ~ hex4 }
+prehex8 = _{ prefix ~ hex8 }
+
+//数字 123, 443
 natdigit = _{ '1'..'9' }
-digit = _{ '0'..'9' }
-hex = _{ '0' .. '9' | 'a' .. 'f' | 'A' .. 'F'}
-
-comma = _{ "," }
-
-db = {"DB"}
-resb = {"RESB"}
+digit    = _{ '0'..'9' }
 num = { natdigit ~ digit* }
-hex2 = {hex ~ hex}
-hex_lit = _{ prefix ~ hex2 }
 
-whitespace = _{ " " | "\r" | "\n" | "\t" }
+//DB 0xaa, 0xfa, 0xa2
+//DB "HELLO OS"
+//DB 1  -> DB 0x01
+db = {"DB"}
+str     =  { (alpha | space | underbar)* }
+string  = _{ dquate ~ str ~ dquate } 
+db_exp  = _{ db ~ ws* ~
+    ((prehex2 ~ ws* ~ comma ~ ws*)* ~ prehex2 | string | num) } 
 
-db_exp = _{ db ~ (hex_lit ~ comma)* ~ hex_lit }
-resb_exp = _{ resb ~ num }
+//dw 0xaaaa 
+//dw 2880 
+dw = {"DW"}
+dw_exp  = _{ dw ~ ws* ~ (prehex4 | num) }
 
-exp = _{ whitespace* ~ (db_exp | resb_exp) ~ whitespace* }
+//dd 0xaaaaaaaa
+//dd 2880 ( < 2^32)
+dd = {"DD"}
+dd_exp  = _{ dd ~ ws* ~ (prehex8 | num) }
+
+//RESB 18
+//RESB 0x01fe-$
+
+resb = {"RESB"}
+resb_exp = _{ resb ~ ws* ~ 
+    ( num  | prehex4 ~ ws* ~ (hyphen ~ ws* ~ dollar)?) }
+
+
+exp = _{ ws* ~ 
+    (db_exp | dw_exp | dd_exp | resb_exp)
+        ~ ws* }
 
