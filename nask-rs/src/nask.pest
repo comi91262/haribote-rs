@@ -5,6 +5,7 @@ dollar   = _{ "$" }
 hyphen   = _{ "-" }
 underbar = _{ "_" }
 space    = _{ " " }
+colon    = _{ ":" }
 ws       = _{ " " | "\r" | "\n" | "\t" }
 
 //a hex number: 0x10, 0x3456, 0x9090AABB
@@ -48,8 +49,33 @@ resb = {"RESB"}
 resb_exp = _{ resb ~ ws* ~ 
     (prehex4 ~ ws* ~ hyphen ~ ws* ~ dollar | num )}
 
+//16-bit register 
+//AX CX DX BX SP BP SI DI
+//AL CL DL BL AH CH DH BH
+//ES, CS, SS, DS, FS, GS
+//32-bit 
+//EAX, ECX, EDX, EBX, ESP, EBP, ESI, EDI
+ax = { "AX" } cx = { "CX" } dx = { "DX" } bx = { "BX" }
+sp = { "SP" } bp = { "BP" } si = { "SI" } di = { "DI" }
+al = { "AL" } cl = { "CL" } dl = { "DL" } bl = { "BL" }
+ah = { "AH" } ch = { "CH" } dh = { "DH" } bh = { "BH" }
+es = { "ES" } cs = { "CS" } ss = { "SS" } ds = { "DS" }
+fs = { "FS" } gs = { "GS" }
+eax = { "EAX" } ecx = { "ECX" } edx = { "EBX" } esp = { "ESP" }
+ebp = { "EBP" } esi = { "ESI" } edi = { "EDI" }
+
+//ORG     0x7c00  
+org = { "ORG" }
+org_exp  = _{ org ~ ws* ~ prehex4 } //10進数表示を受け付けない？
+
+//JMP label
+//:label
+jmp = { "JMP" }
+label = { alpha+ }
+jmp_exp = _{ jmp ~ ws* ~ label }
+
+dist_label = { label ~ colon }
 
 exp = _{ ws* ~ 
-    (db_exp | dw_exp | dd_exp | resb_exp)*
+    (db_exp | dw_exp | dd_exp | resb_exp | org_exp | jmp_exp | dist_label)*
         ~ ws* }
-
