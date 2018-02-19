@@ -6,6 +6,8 @@ hyphen   = _{ "-" }
 underbar = _{ "_" }
 space    = _{ " " }
 colon    = _{ ":" }
+lbranket = _{ "[" }
+rbranket = _{ "]" }
 ws       = _{ " " | "\r" | "\n" | "\t" }
 
 //a hex number: 0x10, 0x3456, 0x9090AABB
@@ -61,8 +63,11 @@ al = { "AL" } cl = { "CL" } dl = { "DL" } bl = { "BL" }
 ah = { "AH" } ch = { "CH" } dh = { "DH" } bh = { "BH" }
 es = { "ES" } cs = { "CS" } ss = { "SS" } ds = { "DS" }
 fs = { "FS" } gs = { "GS" }
-eax = { "EAX" } ecx = { "ECX" } edx = { "EBX" } esp = { "ESP" }
+eax = { "EAX" } ecx = { "ECX" } edx = { "EDX" } ebx = { "EBX" } esp = { "ESP" }
 ebp = { "EBP" } esi = { "ESI" } edi = { "EDI" }
+regi8  = _{ al | cl | dl | bl | ah | ch | dh | bh }
+regi16 = _{ ax | cx | dx | bx | sp | bp | si | di | es | cs | ss | ds | fs | gs }
+regi32 = _{ eax | ecx | edx | ebx | esp | ebp | esi | edi }
 
 //ORG     0x7c00  
 org = { "ORG" }
@@ -74,8 +79,31 @@ jmp = { "JMP" }
 label = { alpha+ }
 jmp_exp = _{ jmp ~ ws* ~ label }
 
+je = { "JE" }
+je_exp = _{ je ~ ws* ~ label }
+
 dist_label = { label ~ colon }
 
+//mov = { "MOV" }
+//mov_exp = _{ mov ~ ws* ~ (regi8  ~ ws* ~ (prehex2 | num | label) | 
+//                          regi16 ~ ws* ~ (prehex4 | num | label) |
+//                          regi32 ~ ws* ~ (prehex8 | num | label) |
+
+
+
+add = { "ADD" }
+add_exp = _{ add ~ ws* ~ num }  //numの範囲は？
+
+cmp = { "CMP" }
+cmp_exp = _{ cmp ~ ws* ~ num }  //numは範囲は？
+
+int = { "INT" }
+int_exp = _{ int ~ ws* ~ prehex2 }
+
+hlt = { "HLT" }
+
 exp = _{ ws* ~ 
-    (db_exp | dw_exp | dd_exp | resb_exp | org_exp | jmp_exp | dist_label)*
+    (db_exp | dw_exp | dd_exp | resb_exp | org_exp | jmp_exp | dist_label 
+     | int_exp | add_exp | cmp_exp | hlt )*
         ~ ws* }
+
