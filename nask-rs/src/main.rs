@@ -77,6 +77,11 @@ mod tests {
     fn bench_resb_hex(b: &mut Bencher) {
         b.iter(|| parse("RESB 0x01fe-$"));
     }
+
+    #[bench]
+    fn bench_empty(b: &mut Bencher) {
+        b.iter(|| parse(""));
+    }
 }
 
 fn main() {
@@ -92,10 +97,7 @@ fn main() {
         let line = line.unwrap();
         let mut pairs = parse(&line);
 
-        let operator = match pairs.next() {
-            Some(rule) => rule,
-            None       => {continue;}
-        };
+        let operator = pairs.next().unwrap();
 
         match operator.as_rule() {
             Rule::org => {
