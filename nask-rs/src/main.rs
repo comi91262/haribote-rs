@@ -1,88 +1,17 @@
-#![feature(test)]
-extern crate test;
-
-extern crate pest;
-#[macro_use]
-extern crate pest_derive;
-
-use pest::Parser;
-
-#[derive(Parser)]
-#[grammar = "nask.pest"]
-struct NaskParser;
-
 use std::io::{BufWriter, Write};
 use std::io::{Read, BufRead, BufReader, self};
 use std::collections::LinkedList;
 use std::str::FromStr;
-use pest::iterators::Pairs;
+
+extern crate nask_rs;
+use nask_rs::parser::parse;
+use nask_rs::parser::Rule;
 
 //#[derive(PartialEq, Debug)]
 //enum Absyn<'a> {
 //    DB(LinkedList<&'a str>),
 //    RESB(u32)
 //}
-
-
-fn parse(line: &str) -> Pairs<Rule> {
-    NaskParser::parse(Rule::exp, line)
-        .unwrap_or_else(|e| panic!("{}", e))
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use test::Bencher;
-
-    #[bench]
-    fn bench_db_hex(b: &mut Bencher) {
-        b.iter(|| parse("DB 0xaa, 0xfa, 0xa2"));
-    }
-
-    #[bench]
-    fn bench_db_str(b: &mut Bencher) {
-        b.iter(|| parse("DB \"HELLO OS\""));
-    }
-
-    #[bench]
-    fn bench_db_num(b: &mut Bencher) {
-        b.iter(|| parse("DB 1"));
-    }
-
-    #[bench]
-    fn bench_dw_hex(b: &mut Bencher) {
-        b.iter(|| parse("DW 0xabab"));
-    }
-
-    #[bench]
-    fn bench_dw_num(b: &mut Bencher) {
-        b.iter(|| parse("DW 2880"));
-    }
-    #[bench]
-    fn bench_dd_hex(b: &mut Bencher) {
- 
-        b.iter(|| parse("DD 0xaaaaaaaa"));
-    }
-    #[bench]
-    fn bench_dd_num(b: &mut Bencher) {
-        b.iter(|| parse("DD 2880"));
-    }
-
-    #[bench]
-    fn bench_resb_num(b: &mut Bencher) {
-        b.iter(|| parse("RESB 18"));
-    }
-
-    #[bench]
-    fn bench_resb_hex(b: &mut Bencher) {
-        b.iter(|| parse("RESB 0x01fe-$"));
-    }
-
-    #[bench]
-    fn bench_empty(b: &mut Bencher) {
-        b.iter(|| parse(""));
-    }
-}
 
 fn main() {
     let mut reader = BufReader::new(io::stdin());

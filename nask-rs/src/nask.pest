@@ -9,6 +9,7 @@ colon    = _{ ":" }
 lbranket = _{ "[" }
 rbranket = _{ "]" }
 ws       = _{ " " | "\r" | "\n" | "\t" }
+empty    = { ws* }
 
 //a hex number: 0x10, 0x3456, 0x9090AABB
 prefix  = _{ "0x" }
@@ -104,6 +105,8 @@ hlt = { "HLT" }
 
 exp = _{ ws* ~ 
     (db_exp | dw_exp | dd_exp | resb_exp | org_exp | jmp_exp | dist_label 
-     | int_exp | add_exp | cmp_exp | hlt )*
-        ~ ws* }
+     | int_exp | add_exp | cmp_exp | hlt )
+        ~ ws* | empty }
+
+        
 
