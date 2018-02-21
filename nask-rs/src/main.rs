@@ -7,11 +7,42 @@ extern crate nask_rs;
 use nask_rs::parser::parse;
 use nask_rs::parser::Rule;
 
+extern crate pest;
+use pest::iterators::Pairs;
+
 //#[derive(PartialEq, Debug)]
 //enum Absyn<'a> {
 //    DB(LinkedList<&'a str>),
 //    RESB(u32)
 //}
+//
+
+fn exec_db_arg(pairs: Pairs<Rule>) -> io::Result<u16> {
+    let mut writer = BufWriter::new(io::stdout());
+    let mut line_count = 0;
+
+    for pair in pairs {
+        let operand = pair.clone().into_span().as_str();
+        match pair.as_rule() {
+            Rule::hex2 => {
+                writer.write_fmt(format_args!(r"\x{}", operand))?;
+            },
+            Rule::num => {
+                let converted = u8::from_str(operand).unwrap();
+                writer.write_fmt(format_args!(r"\x{:02X}", converted))?;
+            },
+            Rule::str => {
+                for b in operand.bytes() {
+                    writer.write_fmt(format_args!(r"\x{:02X}", b))?;
+                }
+            },
+            _ => unreachable!() 
+        }
+        line_count += 1;
+    }
+    Ok(line_count)
+
+}
 
 fn main() {
     let mut reader = BufReader::new(io::stdin());
@@ -29,47 +60,13 @@ fn main() {
         let operator = pairs.next().unwrap();
 
         match operator.as_rule() {
+            Rule::empty => {
+
+            },
             Rule::org => {
-                 
             },
             Rule::db => {
-                let mut operands1 = LinkedList::<&str>::new();
-                let mut operands2 = LinkedList::<&str>::new();
-                let mut operands3 = LinkedList::<&str>::new();
-                for pair in pairs {
-                    match pair.as_rule() {
-                        Rule::hex2 => {
-                            operands1.push_back(pair.clone().into_span().as_str());
-                        },
-                        Rule::str => {
-                            operands2.push_back(pair.clone().into_span().as_str());
-                        },
-                        Rule::num => {
-                            operands3.push_back(pair.clone().into_span().as_str());
-
-                        },
-                        _ => unreachable!()
-                    }
-                }
-                for x in operands1.iter() {
-                    writer.write_fmt(format_args!(r"\x{}", x)).unwrap();
-                    line_count += 1;
-
-                }
-                //str
-                for x in operands2.iter() {
-                    for s in x.bytes(){
-                        writer.write_fmt(format_args!(r"\x{:02X}", s)).unwrap();
-                        line_count += 1;
-                    }
-                }
-                //num 
-                for x in operands3.iter() {
-                    let a = u8::from_str(x).unwrap();
-                    writer.write_fmt(format_args!(r"\x{:02X}", a)).unwrap();
-                    line_count += 1;
-                }
-
+                line_count += exec_db_arg(pairs).unwrap();
             },
             Rule::dw => {
                 let mut operands1 = LinkedList::<&str>::new();
@@ -186,7 +183,7 @@ fn main() {
                     _ => unreachable!()
                 }
             },
-            _ => println!("unreachable")
+            _ => unreachable!()
         }
 
 
