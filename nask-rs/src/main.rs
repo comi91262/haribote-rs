@@ -132,6 +132,17 @@ fn main() {
                     _ => unreachable!()
                 }
             },
+            Rule::int => {
+                let operand = pairs.next().unwrap();
+                match operand.as_rule() {
+                    Rule::hex2 => {
+                        let s = operand.clone().into_span().as_str();
+                        writer.write_fmt(format_args!(r"\xCD\x{}", s)).unwrap();
+                        current_address += 2;
+                    },
+                    _ => unreachable!()
+                }
+            },
             _ => unreachable!()
         }
 

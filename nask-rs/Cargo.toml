@@ -6,3 +6,4 @@ authors = ["ykonomi <hgKaguyaToupako4er@gmail.com>"]
 [dependencies]
 pest = "1.0.3"
 pest_derive = "1.0.3"
+
