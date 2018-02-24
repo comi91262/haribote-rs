@@ -1,0 +1,26 @@
+[tasks.b]
+script = [
+	"cargo build --release --manifest-path ../nask-rs/Cargo.toml",
+	"../nask-rs/target/release/nask-rs < helloos.nas > helloos.tmp",
+	"printf \"%b\" `cat helloos.tmp` > helloos.img",
+]
+
+[tasks.test]
+script = [
+	"xxd helloos.img > helloos.hex",
+	"diff helloos.hex mihon.hex"
+]
+
+
+[tasks.c]
+script = [
+	"rm -f helloos.tmp helloos.img",
+	"cargo clean --manifest-path ../nask-rs/Cargo.toml"
+]
+
+[tasks.run]
+script = [
+	"cp helloos.img ../z_tools/qemu/fdimage0.bin",
+	"make -C ../z_tools/qemu"
+]
+dependencies = ["b"]
