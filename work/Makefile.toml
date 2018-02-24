@@ -1,26 +1,68 @@
+[tasks.default]
+description = "Default task points to the development testing flow"
+alias = "b"
+
 [tasks.b]
+dependencies = [
+ "build", "generate", "to_bin"
+]
+
+[tasks.build]
+command = "cargo"
+args = [
+	"build", "--release", "--manifest-path", "../nask-rs/Cargo.toml"
+]
+
+[tasks.generate]
 script = [
-	"cargo build --release --manifest-path ../nask-rs/Cargo.toml",
-	"../nask-rs/target/release/nask-rs < helloos.nas > helloos.tmp",
-	"printf \"%b\" `cat helloos.tmp` > helloos.img",
+"../nask-rs/target/release/nask-rs < helloos.nas > helloos.tmp",
+]
+
+[tasks.to_bin]
+script = [
+"printf \"%b\" `cat helloos.tmp` > helloos.img"
+]
+
+[tasks.to_hex]
+script = [
+"xxd helloos.img > helloos.hex"
+]
+
+[tasks.diff]
+script = [
+"diff helloos.hex mihon.hex"
 ]
 
 [tasks.test]
-script = [
-	"xxd helloos.img > helloos.hex",
-	"diff helloos.hex mihon.hex"
+dependencies = [
+"to_hex", "diff"
 ]
 
 
-[tasks.c]
+[tasks.rm]
+command = "rm"
+args = [
+	"-f", "helloos.tmp", "helloos.img"
+]
+
+[tasks.nask_clean]
+command = "cargo"
+args = [
+	"clean", "--manifest-path", "../nask-rs/Cargo.toml"
+]
+
+[tasks.clean]
+dependencies = ["rm", "nask_clean"]
+
+[tasks.cp]
 script = [
-	"rm -f helloos.tmp helloos.img",
-	"cargo clean --manifest-path ../nask-rs/Cargo.toml"
+	"cp helloos.img ../z_tools/qemu/fdimage0.bin"
 ]
 
 [tasks.run]
-script = [
-	"cp helloos.img ../z_tools/qemu/fdimage0.bin",
-	"make -C ../z_tools/qemu"
+command = "cargo"
+args = [
+	"make", "run", "--makefile", "--cwd", "../z_tools/qemu"
 ]
-dependencies = ["b"]
+dependencies = ["build", "cp"]
+
