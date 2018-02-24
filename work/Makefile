@@ -5,6 +5,10 @@ helloos.tmp: helloos.nas nask-rs
 nask-rs: ../nask-rs/src/nask.pest ../nask-rs/src/main.rs
 	cargo build --release --manifest-path ../nask-rs/Cargo.toml
 
+test:
+	xxd helloos.img > helloos.hex
+	diff helloos.hex mihon.hex
+
 clean:
 	rm -f helloos.tmp helloos.img
 	cargo clean --manifest-path ../nask-rs/Cargo.toml

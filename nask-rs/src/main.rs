@@ -17,39 +17,12 @@ use pest::iterators::Pairs;
 //}
 //
 
-fn exec_db_arg(pairs: Pairs<Rule>) -> io::Result<u16> {
-    let mut writer = BufWriter::new(io::stdout());
-    let mut line_count = 0;
-
-    for pair in pairs {
-        let operand = pair.clone().into_span().as_str();
-        match pair.as_rule() {
-            Rule::hex2 => {
-                writer.write_fmt(format_args!(r"\x{}", operand))?;
-            },
-            Rule::num => {
-                let converted = u8::from_str(operand).unwrap();
-                writer.write_fmt(format_args!(r"\x{:02X}", converted))?;
-            },
-            Rule::str => {
-                for b in operand.bytes() {
-                    writer.write_fmt(format_args!(r"\x{:02X}", b))?;
-                }
-            },
-            _ => unreachable!() 
-        }
-        line_count += 1;
-    }
-    Ok(line_count)
-
-}
-
 fn main() {
     let mut reader = BufReader::new(io::stdin());
     let mut writer = BufWriter::new(io::stdout());
 
     let mut rbuff = vec![];
-    let mut line_count = 0;
+    let mut current_address = 0;
 
     reader.read_to_end(&mut rbuff).unwrap();
 
@@ -61,12 +34,33 @@ fn main() {
 
         match operator.as_rule() {
             Rule::empty => {
-
             },
             Rule::org => {
+                let operand = pairs.next().unwrap().into_span().as_str();
+                current_address += u16::from_str_radix(operand, 16).unwrap();
             },
             Rule::db => {
-                line_count += exec_db_arg(pairs).unwrap();
+                for pair in pairs {
+                    let operand = pair.clone().into_span().as_str();
+                    match pair.as_rule() {
+                        Rule::hex2 => {
+                            writer.write_fmt(format_args!(r"\x{}", operand)).unwrap();
+                            current_address += 1;
+                        },
+                        Rule::num => {
+                            let converted = u8::from_str(operand).unwrap();
+                            writer.write_fmt(format_args!(r"\x{:02X}", converted)).unwrap();
+                            current_address += 1;
+                        },
+                        Rule::str => {
+                            for b in operand.bytes() {
+                                writer.write_fmt(format_args!(r"\x{:02X}", b)).unwrap();
+                                current_address += 1;
+                            }
+                        },
+                        _ => unreachable!() 
+                    }
+                }
             },
             Rule::dw => {
                 let mut operands1 = LinkedList::<&str>::new();
@@ -92,7 +86,7 @@ fn main() {
                     let b3 = (b & 0xF000) >> 12;
                     writer.write_fmt(format_args!(r"\x{:01X}{:01X}", b1, b0)).unwrap();
                     writer.write_fmt(format_args!(r"\x{:01X}{:01X}", b3, b2)).unwrap();
-                    line_count += 2;
+                    current_address += 2;
                 }
                 //hex4 0xaaaa
                 for x in operands3.iter() {
@@ -103,7 +97,7 @@ fn main() {
                     let b3 = (b & 0xF000) >> 12;
                     writer.write_fmt(format_args!(r"\x{:01X}{:01X}", b1, b0)).unwrap();
                     writer.write_fmt(format_args!(r"\x{:01X}{:01X}", b3, b2)).unwrap();
-                    line_count += 2;
+                    current_address += 2;
                 }
 
             },
@@ -138,7 +132,7 @@ fn main() {
                     writer.write_fmt(format_args!(r"\x{:01X}{:01X}", b3, b2)).unwrap();
                     writer.write_fmt(format_args!(r"\x{:01X}{:01X}", b5, b4)).unwrap();
                     writer.write_fmt(format_args!(r"\x{:01X}{:01X}", b7, b6)).unwrap();
-                    line_count += 4;
+                    current_address += 4;
                 }
 
                 for x in operands3.iter() {
@@ -157,7 +151,7 @@ fn main() {
                     writer.write_fmt(format_args!(r"\x{:01X}{:01X}", b3, b2)).unwrap();
                     writer.write_fmt(format_args!(r"\x{:01X}{:01X}", b5, b4)).unwrap();
                     writer.write_fmt(format_args!(r"\x{:01X}{:01X}", b7, b6)).unwrap();
-                    line_count += 4;
+                    current_address += 4;
 
                 }
 
@@ -167,16 +161,15 @@ fn main() {
                 match operand.as_rule() {
                     Rule::hex4 => {
                         let b = u16::from_str_radix(operand.into_span().as_str(), 16).unwrap();
-                        for _ in 0..(b - line_count) {
+                        for _ in 0..(b - current_address) {
                             writer.write_fmt(format_args!(r"\x00")).unwrap();
-                            line_count += 1;
+                            current_address += 1;
                         }
-
                     },
                     Rule::num  => {
                         for _ in 0..u32::from_str(operand.into_span().as_str()).unwrap() {
                             writer.write_fmt(format_args!(r"\x00")).unwrap();
-                        line_count += 1;
+                            current_address += 1;
                         }
 
                     },

@@ -9,7 +9,7 @@ colon    = _{ ":" }
 lbranket = _{ "[" }
 rbranket = _{ "]" }
 ws       = _{ " " | "\r" | "\n" | "\t" }
-empty    = { ws* }
+empty    =  { ws* }
 
 //a hex number: 0x10, 0x3456, 0x9090AABB
 prefix  = _{ "0x" }
