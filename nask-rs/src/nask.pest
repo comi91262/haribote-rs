@@ -83,7 +83,7 @@ jmp_exp = _{ jmp ~ ws* ~ label }
 je = { "JE" }
 je_exp = _{ je ~ ws* ~ label }
 
-dist_label = { label ~ colon }
+dist_label = _{ label ~ colon }
 
 //mov = { "MOV" }
 //mov_exp = _{ mov ~ ws* ~ (regi8  ~ ws* ~ (prehex2 | num | label) | 

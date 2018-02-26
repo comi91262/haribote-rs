@@ -1,11 +1,14 @@
 #![feature(test)]
 extern crate test;
 
+// a compiler warns no use macro but error if not written
+#[macro_use]
 extern crate pest;
 #[macro_use]
 extern crate pest_derive;
 
 pub mod parser;
+
 
 
 #[cfg(test)]
@@ -57,6 +60,12 @@ mod tests {
     fn bench_resb_hex(b: &mut Bencher) {
         b.iter(|| parse("RESB 0x01fe-$"));
     }
+
+    #[bench]
+    fn bench_label(b: &mut Bencher) {
+        b.iter(|| parse("empty:  "));
+    }
+
 
     #[bench]
     fn bench_empty(b: &mut Bencher) {
