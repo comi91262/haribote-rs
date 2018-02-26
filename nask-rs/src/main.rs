@@ -26,16 +26,13 @@ fn main() {
 
     let mut rbuff = vec![];
     let mut current_address = 0;
-    let mut a = String::new();
 
     reader.read_to_end(&mut rbuff).unwrap();
 
 
     for line1 in rbuff.lines() {
         let line = line1.unwrap();
-        let line2 = line.clone();
-        let mut pairs = parse(&line2);
-        //let mut p = pairs.clone();
+        let mut pairs = parse(&line);
 
         let operator = pairs.next().unwrap();
 
@@ -170,8 +167,8 @@ fn main() {
             Rule::jmp => {
                 let label = pairs.next().unwrap().clone().into_span().as_str();
                 codes.push(235);
-                codes.push(0);  //tmp
-                address_map.insert(current_address+1, Box::new(label.clone()));
+                codes.push(255);  //tmp
+                address_map.insert((current_address+1) as u32, label.to_string());
                 current_address += 2;
             },
            // Rule::je => {
@@ -179,24 +176,32 @@ fn main() {
            //     labels_map.insert(label, 0);
            // },
             Rule::label => {
-                let mut s = operator.clone().into_span().as_str();
-                labels_map.insert(Box::new(s.clone()), current_address);
+                let s = operator.clone().into_span().as_str();
+                labels_map.insert(s.to_string(), current_address);
             }
             _ => unreachable!()
         }
     }
     //check: throw exception if there is a label to which no address is assigned.
-    //for (label, &address) in labels_map.iter() {
-    //    if address == 0 {
-    //        panic!("Some label has no value.");
-    //    }
-    //}
+    for (label, &address) in labels_map.iter() {
+        if address == 0 {
+            panic!("Some label has no value.");
+        }
+    }
 
     for (idx, &b) in codes.iter().enumerate() {
-        if b == 0{
-            let label = address_map.get(&(idx as u16)).unwrap();
-            let address = labels_map.get(label).unwrap();
-            writer.write_fmt(format_args!(r"\x{:02X}", address)).unwrap();
+        if b == 255 {
+            match address_map.get(&((idx  as u32) + 31744)) {
+                Some(label) => {
+                    let address = labels_map.get(label).unwrap();
+                    let bb = 0x00FF & address;
+                    writer.write_fmt(format_args!(r"\x{:02X}", &(bb - 2))).unwrap(); //-2 ??
+                },
+                None => {
+                    writer.write_fmt(format_args!(r"\x{:02X}", b)).unwrap();
+
+                }
+            }
         } else {
             writer.write_fmt(format_args!(r"\x{:02X}", b)).unwrap();
         }
