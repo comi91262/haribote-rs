@@ -183,6 +183,18 @@ fn main() {
                 codes.push(244); //F4
                 current_address += 1;
             },
+            Rule::cmp => {
+                match pairs.next().unwrap().as_rule() {
+                    Rule::al => {
+                        codes.push(60); //F4
+                        let operand = pairs.next().unwrap().clone().into_span().as_str();
+                        let converted = u8::from_str_radix(operand, 10).unwrap();
+                        codes.push(converted);
+                        current_address += 2;
+                    },
+                    _ => unreachable!()
+                }
+            },
             _ => unreachable!()
         }
     }

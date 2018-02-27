@@ -96,7 +96,7 @@ add = { "ADD" }
 add_exp = _{ add ~ ws* ~ num }  //numの範囲は？
 
 cmp = { "CMP" }
-cmp_exp = _{ cmp ~ ws* ~ num }  //numは範囲は？
+cmp_exp = _{ cmp ~ ws* ~ al ~ ws* ~ num }  //numは範囲は？
 
 int = { "INT" }
 int_exp = _{ int ~ ws* ~ prehex2 }
