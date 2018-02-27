@@ -93,7 +93,7 @@ dist_label = _{ label ~ colon }
 
 
 add = { "ADD" }
-add_exp = _{ add ~ ws* ~ num }  //numの範囲は？
+add_exp = _{ add ~ ws* ~ si ~ ws* ~ comma ~ ws* ~ num }  //numの範囲は？
 
 cmp = { "CMP" }
 cmp_exp = _{ cmp ~ ws* ~ al ~ ws* ~ num }  //numは範囲は？

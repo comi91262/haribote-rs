@@ -186,11 +186,24 @@ fn main() {
             Rule::cmp => {
                 match pairs.next().unwrap().as_rule() {
                     Rule::al => {
-                        codes.push(60); //F4
+                        codes.push(0x3C); 
                         let operand = pairs.next().unwrap().clone().into_span().as_str();
                         let converted = u8::from_str_radix(operand, 10).unwrap();
                         codes.push(converted);
                         current_address += 2;
+                    },
+                    _ => unreachable!()
+                }
+            },
+            Rule::add => {
+                match pairs.next().unwrap().as_rule() {
+                    Rule::si => {
+                            codes.push(0x83); 
+                            codes.push(0xC6);
+                            let operand = pairs.next().unwrap().clone().into_span().as_str();
+                            let converted = u8::from_str_radix(operand, 10).unwrap();
+                            codes.push(converted);
+                            current_address += 3;
                     },
                     _ => unreachable!()
                 }
