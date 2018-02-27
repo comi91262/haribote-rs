@@ -178,7 +178,11 @@ fn main() {
             Rule::label => {
                 let s = operator.clone().into_span().as_str();
                 labels_map.insert(s.to_string(), current_address);
-            }
+            },
+            Rule::hlt => {
+                codes.push(244); //F4
+                current_address += 1;
+            },
             _ => unreachable!()
         }
     }
