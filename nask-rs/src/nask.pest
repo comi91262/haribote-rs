@@ -85,10 +85,6 @@ je_exp = _{ je ~ ws* ~ label }
 
 dist_label = _{ label ~ colon }
 
-//mov = { "MOV" }
-//mov_exp = _{ mov ~ ws* ~ (regi8  ~ ws* ~ (prehex2 | num | label) | 
-//                          regi16 ~ ws* ~ (prehex4 | num | label) |
-//                          regi32 ~ ws* ~ (prehex8 | num | label) |
 
 
 
@@ -103,9 +99,18 @@ int_exp = _{ int ~ ws* ~ prehex2 }
 
 hlt = { "HLT" }
 
+mov = { "MOV" }
+//mov_exp = _{ mov ~ ws* ~ (regi8  ~ ws* ~ (prehex2 | num | label) | 
+//                          regi16 ~ ws* ~ (prehex4 | num | label) |
+//                          regi32 ~ ws* ~ (prehex8 | num | label) |
+
+mov_exp = _{ mov ~ ws* ~ (ss | es | ds | sp | si | ah | bx ) ~ ws* ~ comma ~ ws* ~ (ax | prehex2 | prehex4 | num) }
+
+
+
 exp = _{ ws* ~ 
     (db_exp | dw_exp | dd_exp | resb_exp | org_exp | jmp_exp | dist_label 
-     | int_exp | add_exp | cmp_exp | hlt )
+     | int_exp | add_exp | cmp_exp | hlt | mov_exp )
         ~ ws* | empty }
 
         

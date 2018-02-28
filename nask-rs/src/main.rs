@@ -208,6 +208,73 @@ fn main() {
                     _ => unreachable!()
                 }
             },
+            Rule::mov => {
+                match pairs.next().unwrap().as_rule() {
+                    Rule::ss => {
+                        match pairs.next().unwrap().as_rule() {
+                            Rule::ax => {
+                                codes.push(0x8E); 
+                                codes.push(0xD0);
+                                current_address += 2;
+
+                            },
+                            _ => unreachable!()
+                        }
+                    },
+                    Rule::ds => {
+                        match pairs.next().unwrap().as_rule() {
+                            Rule::ax => {
+                                codes.push(0x8E); 
+                                codes.push(0xD8);
+                                current_address += 2;
+                            },
+                            _ => unreachable!()
+                        }
+                    },
+                    Rule::es => {
+                        match pairs.next().unwrap().as_rule() {
+                            Rule::ax => {
+                                codes.push(0x8E); 
+                                codes.push(0xC0);
+                                current_address += 2;
+
+                            },
+                            _ => unreachable!()
+                        }
+                    },
+                    Rule::sp => {
+                        codes.push(0xB8 + 0x04); 
+                        let operand = pairs.next().unwrap().clone().into_span().as_str();
+                        let b = u16::from_str_radix(operand, 16).unwrap();
+                        let b0 = (0x00FF & b) as u8;
+                        let b1 = (0xFF00 & b >> 8) as u8;
+                        codes.push(b1);
+                        codes.push(b0);
+                        current_address += 3;
+                    },
+                    Rule::si => {
+
+                    },
+                    Rule::ah => {
+                        codes.push(0xB0 + 0x04); 
+                        let operand = pairs.next().unwrap().clone().into_span().as_str();
+                        let b = u8::from_str_radix(operand, 16).unwrap();
+                        codes.push(b);
+                        current_address += 2;
+                    },
+                    Rule::bx => {  //16bit
+                        codes.push(0xB8 + 0x03); 
+                        let operand = pairs.next().unwrap().clone().into_span().as_str();
+                        let b = u16::from_str_radix(operand, 10).unwrap();
+                        let b0 = (0x00FF & b) as u8;
+                        let b1 = (0xFF00 & b >> 8) as u8;
+                        codes.push(b0);
+                        codes.push(b1);
+                        current_address += 3;
+                    },
+                    _ => unreachable!()
+                }
+            }
             _ => unreachable!()
         }
     }
