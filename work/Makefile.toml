@@ -1,16 +1,16 @@
 [tasks.default]
 description = "Default task points to the development testing flow"
-alias = "b"
-
-[tasks.b]
-dependencies = [
- "build", "generate", "to_bin"
-]
+alias = "test"
 
 [tasks.build]
 command = "cargo"
 args = [
 	"build", "--release", "--manifest-path", "../nask-rs/Cargo.toml"
+]
+
+[tasks.post-build]
+dependencies = [
+ "build", "generate", "to_bin"
 ]
 
 [tasks.generate]
@@ -35,7 +35,10 @@ script = [
 
 [tasks.test]
 dependencies = [
-"to_hex", "diff"
+"build",
+"post-build",
+"to_hex",
+"diff"
 ]
 
 
@@ -45,14 +48,12 @@ args = [
 	"-f", "helloos.tmp", "helloos.img"
 ]
 
-[tasks.nask_clean]
-command = "cargo"
+
+[tasks.clean]
 args = [
 	"clean", "--manifest-path", "../nask-rs/Cargo.toml"
 ]
-
-[tasks.clean]
-dependencies = ["rm", "nask_clean"]
+dependencies = ["rm"]
 
 [tasks.cp]
 script = [
