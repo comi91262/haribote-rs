@@ -11,46 +11,51 @@ rbranket = _{ "]" }
 ws       = _{ " " | "\r" | "\n" | "\t" }
 empty    =  { ws* }
 
-//a hex number: 0x10, 0x3456, 0x9090AABB
-prefix  = _{ "0x" }
-hex     = _{ '0'..'9' | 'a'..'f' | 'A'..'F'}
-hex2    =  { hex  ~ hex }
-hex4    =  { hex2 ~ hex2 }
-hex8    =  { hex4 ~ hex4 }
-prehex2 = _{ prefix ~ hex2 }
-prehex4 = _{ prefix ~ hex4 }
-prehex8 = _{ prefix ~ hex8 }
-
-//number 123, 443
-natdigit = _{ '1'..'9' }
-digit    = _{ '0'..'9' }
-num = { natdigit ~ digit* | "0" }
-
-//DB 0xaa, 0xfa, 0xa2
-//DB "HELLO OS"
-//DB 1  -> DB 0x01
-db = {"DB"}
 str     =  { (alpha | space | underbar | comma | hyphen | digit)* }
 string  = _{ dquate ~ str ~ dquate } 
-db_exp  = _{ db ~ ws* ~
-    ((prehex2 ~ ws* ~ comma ~ ws*)* ~ prehex2 | string | num) } 
 
-//dw 0xaaaa 
-//dw 2880 
-dw = {"DW"}
-dw_exp  = _{ dw ~ ws* ~ (prehex4 | num) }
+digit = _{ '0'..'9' }
+num   = _{ '1'..'9' ~ digit* | "0" }
 
-//dd 0xaaaaaaaa
-//dd 2880 ( < 2^32)
-dd = {"DD"}
-dd_exp  = _{ dd ~ ws* ~ (prehex8 | num) }
+//caution! overflow
+dec8  = { num } 
+dec16 = { num }
+dec32 = { num }
 
-//RESB 18
-//RESB 0x01fe-$
+hex   = _{ '0'..'9' | 'a'..'f' | 'A'..'F' }
 
-resb = {"RESB"}
-resb_exp = _{ resb ~ ws* ~ 
-    (prehex4 ~ ws* ~ hyphen ~ ws* ~ dollar | num )}
+_hex8  = _{ "0x" ~ hex{2} }
+_hex16 = _{ "0x" ~ hex{4} }
+_hex32 = _{ "0x" ~ hex{8} }
+
+hex8  = { _hex8  }
+hex16 = { _hex16 }
+hex32 = { _hex32 }
+
+imm8  = { dec8  | hex8  } 
+imm16 = { dec16 | hex16 }
+imm32 = { dec32 | hex32 }
+
+//a hex number: 0x10, 0x3456, 0x9090AABB
+prefix  = _{ "0x" }
+prehex2 = _{ prefix ~ hex{2} }
+prehex4 = _{ prefix ~ hex{4} }
+prehex8 = _{ prefix ~ hex{8} }
+
+
+//DB, DW, DD, RESB instructions
+db      =  { "DB" }
+db_exp  = _{ db ~ ws* ~ imm8 ~ ws* ~ (comma ~ ws* ~ imm8)*
+           | db ~ ws* ~ string } 
+
+dw      =  { "DW" }
+dw_exp  = _{ dw ~ ws* ~ imm16 }
+
+dd      =  { "DD" }
+dd_exp  = _{ dd ~ ws* ~ imm32 }
+
+resb     =  { "RESB" }
+resb_exp = _{ resb ~ ws* ~ (imm16 ~ ws* ~ hyphen ~ ws* ~ dollar | imm16 )}
 
 //16-bit register 
 //AX CX DX BX SP BP SI DI
@@ -72,7 +77,7 @@ regi32 = _{ eax | ecx | edx | ebx | esp | ebp | esi | edi }
 
 //ORG     0x7c00  
 org = { "ORG" }
-org_exp  = _{ org ~ ws* ~ prehex4 } //10進数表示を受け付けない？
+org_exp  = _{ org ~ ws* ~ hex8 } //10進数表示を受け付けない？
 
 //JMP label
 //:label
@@ -89,10 +94,10 @@ dist_label = _{ label ~ colon }
 
 
 add = { "ADD" }
-add_exp = _{ add ~ ws* ~ si ~ ws* ~ comma ~ ws* ~ num }  //numの範囲は？
+add_exp = _{ add ~ ws* ~ si ~ ws* ~ comma ~ ws* ~ num }
 
 cmp = { "CMP" }
-cmp_exp = _{ cmp ~ ws* ~ al ~ ws* ~ num }  //numは範囲は？
+cmp_exp = _{ cmp ~ ws* ~ al ~ ws* ~ comma ~ ws* ~ num } 
 
 int = { "INT" }
 int_exp = _{ int ~ ws* ~ prehex2 }
@@ -104,7 +109,7 @@ mov = { "MOV" }
 //                          regi16 ~ ws* ~ (prehex4 | num | label) |
 //                          regi32 ~ ws* ~ (prehex8 | num | label) |
 
-mov_exp = _{ mov ~ ws* ~ (ss | es | ds | sp | si | ah | bx ) ~ ws* ~ comma ~ ws* ~ (ax | prehex2 | prehex4 | num) }
+mov_exp = _{ mov ~ ws* ~ (ss | es | ds | sp | si | ah | bx ) ~ ws* ~ comma ~ ws* ~ (ax | imm16 | imm8) }
 
 
 
