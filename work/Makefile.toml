@@ -15,22 +15,23 @@ dependencies = [
 
 [tasks.generate]
 script = [
-"../nask-rs/target/release/nask-rs < helloos.nas > helloos.tmp",
+"../nask-rs/target/release/nask-rs < ipl.nas > ipl.tmp",
 ]
 
 [tasks.to_bin]
 script = [
-"printf \"%b\" `cat helloos.tmp` > helloos.img"
+"printf \"%b\" `cat ipl.tmp` > ipl.bin",
+"cat ipl.bin tail.bin > helloos.img"
 ]
 
 [tasks.to_hex]
 script = [
-"xxd helloos.img > helloos.hex"
+"xxd ipl.bin > ipl.hex"
 ]
 
 [tasks.diff]
 script = [
-"diff helloos.hex mihon.hex"
+"diff ipl.hex mihon.hex"
 ]
 
 [tasks.test]
@@ -45,7 +46,7 @@ dependencies = [
 [tasks.rm]
 command = "rm"
 args = [
-	"-f", "helloos.tmp", "helloos.img", "helloos.hex"
+	"-f", "ipl.tmp", "ipl.bin", "helloos.img", "ipl.hex"
 ]
 
 

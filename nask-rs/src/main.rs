@@ -87,8 +87,6 @@ fn main() {
 
     reader.read_to_end(&mut rbuff).unwrap();
 
-
-
     for line1 in rbuff.lines() {
         let line = line1.unwrap();
         let mut pairs = parse(&line);
@@ -104,7 +102,7 @@ fn main() {
                 current_address += to_u16(inner.as_str(), inner.as_rule());
             },
             Rule::db => {
-                for op in pairs.next() {
+                for op in pairs {
                     match op.as_rule() {
                         Rule::imm8 => {
                             let inner = op.into_inner().next().unwrap();
@@ -157,26 +155,25 @@ fn main() {
                 current_address += 4;
             },
             Rule::resb => {
-                let op = pairs.next().unwrap();
+                let op     = pairs.next().unwrap();
+                let option = pairs.next();
                 match op.as_rule() {
-                    Rule::imm32 => {
-                        for inner in op.into_inner() {
-                            match inner.as_rule() {
-                                Rule::hex32 => {
-                                    let b = u32::from_str_radix(inner.as_str(), 16).unwrap();
-                                    for _ in 0..(b - current_address as u32) {
-                                        codes.push(0); 
-                                        current_address += 1;
-                                    }
-                                },
-                                Rule::dec32 => {
-                                    let n = u32::from_str_radix(inner.as_str(), 10).unwrap();
-                                    for _ in 0..n {
-                                        codes.push(0);
-                                        current_address += 1;
-                                    }
-                                },
-                                _ => unreachable!() 
+                    Rule::imm16 => {
+                        let inner = op.into_inner().next().unwrap();
+                        let n = to_u16(inner.as_str(), inner.as_rule());
+
+                        match option {
+                            Some(_) => {
+                                for _ in 0..(n - current_address) {
+                                    codes.push(0); 
+                                    current_address += 1;
+                                }
+                            }
+                            None    => {
+                                for _ in 0..n {
+                                    codes.push(0);
+                                    current_address += 1;
+                                }
                             }
                         }
                     }
@@ -299,10 +296,10 @@ fn main() {
                         };
 
                         codes.push(0xB8 + 0x04); 
-                        let b0 = (0x00FF & b) as u8;
-                        let b1 = (0xFF00 & b >> 8) as u8;
-                        codes.push(b1);
-                        codes.push(b0);
+                        let b0 =  0x00FF & b;
+                        let b1 = (0xFF00 & b) >> 8;
+                        codes.push(b0 as u8);
+                        codes.push(b1 as u8);
                         current_address += 3;
                     },
                     Rule::si => {

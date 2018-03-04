@@ -1,7 +1,7 @@
 alpha    = _{ 'a' .. 'z' | 'A' .. 'Z' }
 comma    = _{ "," }
 dquate   = _{ "\"" }
-dollar   = _{ "$" }
+dollar   =  { "$" }
 hyphen   = _{ "-" }
 underbar = _{ "_" }
 space    = _{ " " }
@@ -44,7 +44,7 @@ dd      =  { "DD" }
 dd_exp  = _{ dd ~ ws* ~ imm32 }
 
 resb     =  { "RESB" }
-resb_exp = _{ resb ~ ws* ~ (imm32 ~ ws* ~ hyphen ~ ws* ~ dollar | imm32 )}
+resb_exp = _{ resb ~ ws* ~ (imm16 ~ ws* ~ hyphen ~ ws* ~ dollar | imm16 )}
 
 //16-bit register 
 //AX CX DX BX SP BP SI DI
@@ -98,7 +98,7 @@ mov = { "MOV" }
 
 mov_exp = _{ mov ~ ws* ~ (reg8  ~ ws* ~ comma ~ ws* ~ imm8
                         | reg16 ~ ws* ~ comma ~ ws* ~ imm16 
-                        | reg32 ~ ws* ~ comma ~ ws* ~ reg32
+                        | reg32 ~ ws* ~ comma ~ ws* ~ imm32
                         | ss    ~ ws* ~ comma ~ ws* ~ ax 
                         | ds    ~ ws* ~ comma ~ ws* ~ ax 
                         | es    ~ ws* ~ comma ~ ws* ~ ax) }
