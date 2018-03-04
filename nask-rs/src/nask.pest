@@ -106,7 +106,7 @@ mov_exp = _{ mov ~ ws* ~ (reg8  ~ ws* ~ comma ~ ws* ~ imm8
 
 
 exp = _{ ws* ~ 
-    (db_exp | dw_exp | dd_exp | resb_exp | org_exp | jmp_exp | dist_label 
+    (db_exp | dw_exp | dd_exp | resb_exp | org_exp | jmp_exp | je_exp | dist_label 
      | int_exp | add_exp | cmp_exp | hlt | mov_exp )
         ~ ws* | empty }
 

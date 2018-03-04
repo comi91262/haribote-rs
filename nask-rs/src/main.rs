@@ -184,7 +184,7 @@ fn main() {
                 let op = pairs.next().unwrap();
                 match op.as_rule() {
                     Rule::imm8 => {
-                        codes.push(205);
+                        codes.push(0xCD);
                         let inner = op.into_inner().next().unwrap();
                         codes.push(to_u8(inner.as_str(), inner.as_rule()));
                         current_address += 2;
@@ -194,21 +194,24 @@ fn main() {
             },
             Rule::jmp => {
                 let label = pairs.next().unwrap().as_str();
-                codes.push(235);
-                codes.push(255);  //tmp
+                codes.push(0xEB);
+                codes.push(0xFF); //tmp
                 address_map.insert((current_address+1) as u32, label.to_string());
                 current_address += 2;
             },
-           // Rule::je => {
-           //     let label = pairs.next().unwrap().clone().into_span().as_str();
-           //     labels_map.insert(label, 0);
-           // },
+            Rule::je => {
+                let label = pairs.next().unwrap().as_str();
+                codes.push(0x74);
+                codes.push(0xFE);  //tmp
+                address_map.insert((current_address+1) as u32, label.to_string());
+                current_address += 2;
+            },
             Rule::label => {
                 let label = operator.as_str();
                 labels_map.insert(label.to_string(), current_address);
             },
             Rule::hlt => {
-                codes.push(244); //F4
+                codes.push(0xF4);
                 current_address += 1;
             },
             Rule::cmp => {
@@ -336,16 +339,25 @@ fn main() {
     }
 
     for (idx, &b) in codes.iter().enumerate() {
-        if b == 255 {
+        //JMP
+        if b == 0xFF {
             match address_map.get(&((idx as u32) + 0x7c00)) {
                 Some(label) => {
                     let address = labels_map.get(label).unwrap();
                     let bb = 0x00FF & address;
                     writer.write_fmt(format_args!(r"\x{:02X}", &(bb - 2))).unwrap(); //-2 ??
                 },
-                None => {
-                    writer.write_fmt(format_args!(r"\x{:02X}", b)).unwrap();
-                }
+                None => writer.write_fmt(format_args!(r"\x{:02X}", b)).unwrap()
+            }
+        //JE
+        } else if b == 0xFE {
+            match address_map.get(&((idx as u32) + 0x7c00)) {
+                Some(label) => {
+                    let address = labels_map.get(label).unwrap();
+                    let bb = 0x00FF & address - (idx as u16) + 1;
+                    writer.write_fmt(format_args!(r"\x{:02X}", &(bb - 2))).unwrap(); //-2 ??
+                },
+                None => writer.write_fmt(format_args!(r"\x{:02X}", b)).unwrap()
             }
         } else {
             writer.write_fmt(format_args!(r"\x{:02X}", b)).unwrap();
