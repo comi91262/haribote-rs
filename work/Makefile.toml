@@ -45,7 +45,7 @@ dependencies = [
 [tasks.rm]
 command = "rm"
 args = [
-	"-f", "helloos.tmp", "helloos.img"
+	"-f", "helloos.tmp", "helloos.img", "helloos.hex"
 ]
 
 

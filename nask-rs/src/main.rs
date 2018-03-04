@@ -15,19 +15,65 @@ extern crate pest;
 //
 //
 
-// TODO to add a limit to num
-fn to_u8(imm: &str, rule: Rule) -> io::Result<u8> {
+fn to_u8(imm: &str, rule: Rule) -> u8 {
     match rule {
         Rule::hex8 => {
-            u8::from_str_radix(imm, 16).unwrap()
+            let (first, last) = imm.split_at(2);
+            if first == "0x" {
+                u8::from_str_radix(last, 16).unwrap()
+            } else {
+                panic!("to_u8");
+            }
         },
         Rule::dec8 => {
-            u8::from_str_radix(imm, 10).unwrap()
+            match u8::from_str_radix(imm, 10) {
+                Ok(value) => value,
+                Err(e) => panic!("overflow : {:?}", e)
+            }
         },
         _ => unreachable!() 
     }
 }
 
+fn to_u16(imm: &str, rule: Rule) -> u16 {
+    match rule {
+        Rule::hex16 => {
+            let (first, last) = imm.split_at(2);
+            if first == "0x" {
+                u16::from_str_radix(last, 16).unwrap()
+            } else {
+                panic!("to_u16");
+            }
+        },
+        Rule::dec16 => {
+            match u16::from_str_radix(imm, 10) {
+                Ok(value) => value,
+                Err(e) => panic!("overflow : {:?}", e)
+            }
+        },
+        _ => unreachable!() 
+    }
+}
+
+fn to_u32(imm: &str, rule: Rule) -> u32 {
+    match rule {
+        Rule::hex32 => {
+            let (first, last) = imm.split_at(2);
+            if first == "0x" {
+                u32::from_str_radix(last, 16).unwrap()
+            } else {
+                panic!("to_u32");
+            }
+        },
+        Rule::dec32 => {
+            match u32::from_str_radix(imm, 10) {
+                Ok(value) => value,
+                Err(e) => panic!("overflow : {:?}", e)
+            }
+        },
+        _ => unreachable!() 
+    }
+}
 fn main() {
     let mut codes = vec![];
     let mut labels_map = HashMap::new();
@@ -53,22 +99,16 @@ fn main() {
             Rule::empty => {
             },
             Rule::org => {
-                let op = pairs.next().unwrap().as_str();
-                //current_address += u16::from_str_radix(op, 16).unwrap();
+                let op = pairs.next().unwrap();
+                let inner = op.into_inner().next().unwrap();
+                current_address += to_u16(inner.as_str(), inner.as_rule());
             },
             Rule::db => {
                 for op in pairs.next() {
                     match op.as_rule() {
                         Rule::imm8 => {
-                            op.into_inner().next().unwrap();
-                            match op.into_inner().next() {
-                                Some(inner) => {
-                                    let a = inner.as_str();
-                                    let b = inner.as_rule();
-                                    codes.push(to_u8(a, b));
-                                },
-                                _ => unreachable!() 
-                            }
+                            let inner = op.into_inner().next().unwrap();
+                            codes.push(to_u8(inner.as_str(), inner.as_rule()));
                             current_address += 1;
                         },
                         Rule::str => {
@@ -82,24 +122,14 @@ fn main() {
                 }
             },
             Rule::dw => {
-                let op1 = pairs.next().unwrap();
-                let mut b = 0x0000;
-                match op1.as_rule() {
+                let op = pairs.next().unwrap();
+                let b = match op.as_rule() {
                     Rule::imm16 => {
-                        for inner in op1.into_inner() {
-                            match inner.as_rule() {
-                                Rule::hex16 => {
-                                    b = u16::from_str_radix(inner.as_str(), 16).unwrap()
-                                },
-                                Rule::dec16 => {
-                                    b = u16::from_str_radix(inner.as_str(), 10).unwrap()
-                                },
-                                _ => unreachable!() 
-                            }
-                        }
-                    }
+                        let inner = op.into_inner().next().unwrap();
+                        to_u16(inner.as_str(), inner.as_rule())
+                    },
                     _ => unreachable!()
-                }
+                };
                 let b10 =  b & 0x00FF;
                 let b32 = (b & 0xFF00) >> 8;
                 codes.push(b10 as u8);
@@ -107,24 +137,14 @@ fn main() {
                 current_address += 2;
             },
             Rule::dd => {
-                let op1 = pairs.next().unwrap();
-                let mut b = 0x0000;
-                match op1.as_rule() {
+                let op = pairs.next().unwrap();
+                let b = match op.as_rule() {
                     Rule::imm32 => {
-                        for inner in op1.into_inner() {
-                            match inner.as_rule() {
-                                Rule::hex32 => {
-                                    b = u32::from_str_radix(inner.as_str(), 16).unwrap()
-                                },
-                                Rule::dec32 => {
-                                    b = u32::from_str_radix(inner.as_str(), 10).unwrap()
-                                },
-                                _ => unreachable!() 
-                            }
-                        }
-                    }
+                        let inner = op.into_inner().next().unwrap();
+                        to_u32(inner.as_str(), inner.as_rule())
+                    },
                     _ => unreachable!()
-                }
+                };
 
                 let b10 =  b & 0x000000FF;
                 let b32 = (b & 0x0000FF00) >>  8;
@@ -139,18 +159,18 @@ fn main() {
             Rule::resb => {
                 let op = pairs.next().unwrap();
                 match op.as_rule() {
-                    Rule::imm16 => {
+                    Rule::imm32 => {
                         for inner in op.into_inner() {
                             match inner.as_rule() {
-                                Rule::hex16 => {
-                                    let b = u16::from_str_radix(inner.as_str(), 16).unwrap();
-                                    for _ in 0..(b - current_address) {
-                                        codes.push(0);
+                                Rule::hex32 => {
+                                    let b = u32::from_str_radix(inner.as_str(), 16).unwrap();
+                                    for _ in 0..(b - current_address as u32) {
+                                        codes.push(0); 
                                         current_address += 1;
                                     }
                                 },
-                                Rule::dec16 => {
-                                    let n = u16::from_str_radix(inner.as_str(), 10).unwrap();
+                                Rule::dec32 => {
+                                    let n = u32::from_str_radix(inner.as_str(), 10).unwrap();
                                     for _ in 0..n {
                                         codes.push(0);
                                         current_address += 1;
@@ -164,21 +184,19 @@ fn main() {
                 }
             },
             Rule::int => {
-               // let operand = pairs.next().unwrap();
-               // match operand.as_rule() {
-                  //  Rule::hex2 => {
-                  //      let s = operand.clone().into_span().as_str();
-                  //      let converted = u8::from_str_radix(s, 16).unwrap();
-                  //    //  writer.write_fmt(format_args!(r"\xCD\x{}", s)).unwrap();
-                  //      codes.push(205);
-                  //      codes.push(converted);
-                  //      current_address += 2;
-                  //  },
-            //    _ => unreachable!()
-               // }
+                let op = pairs.next().unwrap();
+                match op.as_rule() {
+                    Rule::imm8 => {
+                        codes.push(205);
+                        let inner = op.into_inner().next().unwrap();
+                        codes.push(to_u8(inner.as_str(), inner.as_rule()));
+                        current_address += 2;
+                    },
+                    _ => unreachable!()
+                }
             },
             Rule::jmp => {
-                let label = pairs.next().unwrap().clone().into_span().as_str();
+                let label = pairs.next().unwrap().as_str();
                 codes.push(235);
                 codes.push(255);  //tmp
                 address_map.insert((current_address+1) as u32, label.to_string());
@@ -189,42 +207,51 @@ fn main() {
            //     labels_map.insert(label, 0);
            // },
             Rule::label => {
-                let s = operator.clone().into_span().as_str();
-                labels_map.insert(s.to_string(), current_address);
+                let label = operator.as_str();
+                labels_map.insert(label.to_string(), current_address);
             },
             Rule::hlt => {
                 codes.push(244); //F4
                 current_address += 1;
             },
             Rule::cmp => {
-//                let op1 = pairs.next().unwrap();
-//                let op2 = pairs.next().unwrap();
-//
-//                match pairs.next().unwrap().as_rule() {
-//                    Rule::al => {
-//                        codes.push(0x3C); 
-//                        let operand = pairs.next().unwrap().clone().into_span().as_str();
-//                        let converted = u8::from_str_radix(operand, 10).unwrap();
-//                        codes.push(converted);
-//                        current_address += 2;
-//                    },
-//                    _ => unreachable!()
-//                }
+                let op1 = pairs.next().unwrap();
+                let op2 = pairs.next().unwrap();
+
+                match op1.as_rule() {
+                    Rule::al => {
+                        codes.push(0x3C); 
+                        let inner = op2.into_inner().next().unwrap();
+                        codes.push(to_u8(inner.as_str(), inner.as_rule()));
+                        current_address += 2;
+                    }
+                    Rule::ax => {
+                        codes.push(0x3D); 
+                        panic!("not implemented");
+                        
+                    }
+                    Rule::eax => {
+                        codes.push(0x3D); 
+                        panic!("not implemented");
+                    }
+                    _ => unreachable!()
+                }
             },
             Rule::add => {
-//                let op1 = pairs.next().unwrap();
-//                let op2 = pairs.next().unwrap();
-//
-//                match op1.as_rule() {
-//                    Rule::si => {
-//                            codes.push(0x83); 
-//                            codes.push(0xC6);
-//                            let converted = u8::from_str_radix(op2.as_str(), 10).unwrap();
-//                            codes.push(converted);
-//                            current_address += 3;
-//                    },
-//                    _ => unreachable!()
-//                }
+                let op1 = pairs.next().unwrap();
+                let op2 = pairs.next().unwrap();
+
+                //TODO table
+                match op1.as_rule() {
+                    Rule::si => {
+                            codes.push(0x83); 
+                            codes.push(0xC6);
+                            let inner = op2.into_inner().next().unwrap();
+                            codes.push(to_u8(inner.as_str(), inner.as_rule()));
+                            current_address += 3;
+                    },
+                    _ => unreachable!()
+                }
             },
             Rule::mov => {
                 let op1 = pairs.next().unwrap();
@@ -263,23 +290,14 @@ fn main() {
                         }
                     },
                     Rule::sp => {
-                        let mut b = 0x0000;
-                        match op2.as_rule() {
+                        let b = match op2.as_rule() {
                             Rule::imm16 => {
                                 let inner = op2.into_inner().next().unwrap();
-                                match inner.as_rule() {
-                                    Rule::hex16 => {
-                                        b = u16::from_str_radix(inner.as_str(), 16).unwrap();
-
-                                    },
-                                    Rule::dec16 => {
-                                        b = u16::from_str_radix(inner.as_str(), 10).unwrap();
-                                    }
-                                    _ => unreachable!()
-                                }
+                                to_u16(inner.as_str(), inner.as_rule())
                             },
                             _ => unreachable!()
-                        }
+                        };
+
                         codes.push(0xB8 + 0x04); 
                         let b0 = (0x00FF & b) as u8;
                         let b1 = (0xFF00 & b >> 8) as u8;
@@ -291,19 +309,20 @@ fn main() {
 
                     },
                     Rule::ah => {
-                      //  codes.push(0xB0 + 0x04); 
-                      //  let b = u8::from_str_radix(op2.as_str(), 16).unwrap();
-                      //  codes.push(b);
-                      //  current_address += 2;
+                        codes.push(0xB0 + 0x04); 
+                        let inner = op2.into_inner().next().unwrap();
+                        codes.push(to_u8(inner.as_str(), inner.as_rule()));
+                        current_address += 2;
                     },
                     Rule::bx => {  //16bit
-                    //    codes.push(0xB8 + 0x03); 
-                    //    let b = u16::from_str_radix(op2.as_str(), 10).unwrap();
-                    //    let b0 = (0x00FF & b) as u8;
-                    //    let b1 = (0xFF00 & b >> 8) as u8;
-                    //    codes.push(b0);
-                    //    codes.push(b1);
-                    //    current_address += 3;
+                        codes.push(0xB8 + 0x03); 
+                        let inner = op2.into_inner().next().unwrap();
+                        let b = to_u16(inner.as_str(), inner.as_rule());
+                        let b0 = (0x00FF & b) as u8;
+                        let b1 = (0xFF00 & b >> 8) as u8;
+                        codes.push(b0);
+                        codes.push(b1);
+                        current_address += 3;
                     },
                     _ => unreachable!()
                 }
@@ -311,7 +330,8 @@ fn main() {
             _ => unreachable!()
         }
     }
-        //check: throw exception if there is a label to which no address is assigned.
+
+    //check: throw exception if there is a label to which no address is assigned.
     for (_, &address) in labels_map.iter() {
         if address == 0 {
             panic!("Some label has no value.");
@@ -320,7 +340,7 @@ fn main() {
 
     for (idx, &b) in codes.iter().enumerate() {
         if b == 255 {
-            match address_map.get(&((idx  as u32) + 31744)) {
+            match address_map.get(&((idx as u32) + 0x7c00)) {
                 Some(label) => {
                     let address = labels_map.get(label).unwrap();
                     let bb = 0x00FF & address;
@@ -328,7 +348,6 @@ fn main() {
                 },
                 None => {
                     writer.write_fmt(format_args!(r"\x{:02X}", b)).unwrap();
-
                 }
             }
         } else {

@@ -24,24 +24,13 @@ dec32 = { num }
 
 hex   = _{ '0'..'9' | 'a'..'f' | 'A'..'F' }
 
-_hex8  = _{ "0x" ~ hex{2} }
-_hex16 = _{ "0x" ~ hex{4} }
-_hex32 = _{ "0x" ~ hex{8} }
+hex8  = { "0x" ~ hex{2} }
+hex16 = { "0x" ~ hex{4} }
+hex32 = { "0x" ~ hex{8} }
 
-hex8  = { _hex8  }
-hex16 = { _hex16 }
-hex32 = { _hex32 }
-
-imm8  = { dec8  | hex8  } 
-imm16 = { dec16 | hex16 }
-imm32 = { dec32 | hex32 }
-
-//a hex number: 0x10, 0x3456, 0x9090AABB
-prefix  = _{ "0x" }
-prehex2 = _{ prefix ~ hex{2} }
-prehex4 = _{ prefix ~ hex{4} }
-prehex8 = _{ prefix ~ hex{8} }
-
+imm8  = { hex8 | dec8 } 
+imm16 = { hex16 | dec16 }
+imm32 = { hex32 | dec32 }
 
 //DB, DW, DD, RESB instructions
 db      =  { "DB" }
@@ -55,7 +44,7 @@ dd      =  { "DD" }
 dd_exp  = _{ dd ~ ws* ~ imm32 }
 
 resb     =  { "RESB" }
-resb_exp = _{ resb ~ ws* ~ (imm16 ~ ws* ~ hyphen ~ ws* ~ dollar | imm16 )}
+resb_exp = _{ resb ~ ws* ~ (imm32 ~ ws* ~ hyphen ~ ws* ~ dollar | imm32 )}
 
 //16-bit register 
 //AX CX DX BX SP BP SI DI
@@ -71,13 +60,14 @@ es = { "ES" } cs = { "CS" } ss = { "SS" } ds = { "DS" }
 fs = { "FS" } gs = { "GS" }
 eax = { "EAX" } ecx = { "ECX" } edx = { "EDX" } ebx = { "EBX" } esp = { "ESP" }
 ebp = { "EBP" } esi = { "ESI" } edi = { "EDI" }
-regi8  = _{ al | cl | dl | bl | ah | ch | dh | bh }
-regi16 = _{ ax | cx | dx | bx | sp | bp | si | di | es | cs | ss | ds | fs | gs }
-regi32 = _{ eax | ecx | edx | ebx | esp | ebp | esi | edi }
+reg8  = _{ al | cl | dl | bl | ah | ch | dh | bh }
+reg16 = _{ ax | cx | dx | bx | sp | bp | si | di }
+reg32 = _{ eax | ecx | edx | ebx | esp | ebp | esi | edi }
+
 
 //ORG     0x7c00  
 org = { "ORG" }
-org_exp  = _{ org ~ ws* ~ hex8 } //10進数表示を受け付けない？
+org_exp  = _{ org ~ ws* ~ imm16 }
 
 //JMP label
 //:label
@@ -94,22 +84,24 @@ dist_label = _{ label ~ colon }
 
 
 add = { "ADD" }
-add_exp = _{ add ~ ws* ~ si ~ ws* ~ comma ~ ws* ~ num }
+add_exp = _{ add ~ ws* ~ si ~ ws* ~ comma ~ ws* ~ imm8 }
 
 cmp = { "CMP" }
-cmp_exp = _{ cmp ~ ws* ~ al ~ ws* ~ comma ~ ws* ~ num } 
+cmp_exp = _{ cmp ~ ws* ~ al ~ ws* ~ comma ~ ws* ~ imm8 } 
 
 int = { "INT" }
-int_exp = _{ int ~ ws* ~ prehex2 }
+int_exp = _{ int ~ ws* ~ imm8 }
 
 hlt = { "HLT" }
 
 mov = { "MOV" }
-//mov_exp = _{ mov ~ ws* ~ (regi8  ~ ws* ~ (prehex2 | num | label) | 
-//                          regi16 ~ ws* ~ (prehex4 | num | label) |
-//                          regi32 ~ ws* ~ (prehex8 | num | label) |
 
-mov_exp = _{ mov ~ ws* ~ (ss | es | ds | sp | si | ah | bx ) ~ ws* ~ comma ~ ws* ~ (ax | imm16 | imm8) }
+mov_exp = _{ mov ~ ws* ~ (reg8  ~ ws* ~ comma ~ ws* ~ imm8
+                        | reg16 ~ ws* ~ comma ~ ws* ~ imm16 
+                        | reg32 ~ ws* ~ comma ~ ws* ~ reg32
+                        | ss    ~ ws* ~ comma ~ ws* ~ ax 
+                        | ds    ~ ws* ~ comma ~ ws* ~ ax 
+                        | es    ~ ws* ~ comma ~ ws* ~ ax) }
 
 
 
