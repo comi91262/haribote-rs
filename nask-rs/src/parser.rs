@@ -92,3 +92,18 @@ fn mov1() {
         ]
     };
 }
+
+#[test]
+fn mov2() {
+    parses_to! {
+        parser: NaskParser, 
+        input: "MOV AL,[SI]",
+        rule: Rule::mov_exp,
+        tokens: [
+            mov(0, 3),
+            al(4, 6),
+            si(8, 10)
+        ]
+    };
+}
+

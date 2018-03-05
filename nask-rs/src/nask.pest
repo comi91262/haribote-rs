@@ -101,6 +101,8 @@ mov_exp = _{ mov ~ ws* ~ (reg8  ~ ws* ~ comma ~ ws* ~ imm8
                         | reg32 ~ ws* ~ comma ~ ws* ~ imm32
                         | ss    ~ ws* ~ comma ~ ws* ~ ax 
                         | ds    ~ ws* ~ comma ~ ws* ~ ax 
+                        | si    ~ ws* ~ comma ~ ws* ~ label
+                        | al    ~ ws* ~ comma ~ ws* ~ lbranket ~ si ~ rbranket
                         | es    ~ ws* ~ comma ~ ws* ~ ax) }
 
 

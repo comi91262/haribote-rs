@@ -257,6 +257,16 @@ fn main() {
                 let op1 = pairs.next().unwrap();
                 let op2 = pairs.next().unwrap();
                 match op1.as_rule() {
+                    Rule::ax => {
+                        codes.push(0xb8); 
+                        let inner = op2.into_inner().next().unwrap();
+                        let b = to_u16(inner.as_str(), inner.as_rule());
+                        let b0 =  0x00FF & b;
+                        let b1 = (0xFF00 & b) >> 8;
+                        codes.push(b0 as u8);
+                        codes.push(b1 as u8);
+                        current_address += 3;
+                    },
                     Rule::ss => {
                         match op2.as_rule() {
                             Rule::ax => {
@@ -289,6 +299,16 @@ fn main() {
                             _ => unreachable!()
                         }
                     },
+                    Rule::al => {
+                        match op2.as_rule() {
+                            Rule::si => {
+                                codes.push(0x8A);
+                                codes.push(0x04); 
+                                current_address += 2;
+                            },
+                            _ => unreachable!()
+                        };
+                    },
                     Rule::sp => {
                         let b = match op2.as_rule() {
                             Rule::imm16 => {
@@ -306,7 +326,13 @@ fn main() {
                         current_address += 3;
                     },
                     Rule::si => {
-
+                        let label = op2.as_str();
+                        codes.push(0xBE);
+                        codes.push(0xFE);  //tmp
+                        codes.push(0xFD);  //tmp
+                        address_map.insert((current_address+1) as u32, label.to_string());
+                        address_map.insert((current_address+2) as u32, label.to_string());
+                        current_address += 3;
                     },
                     Rule::ah => {
                         codes.push(0xB0 + 0x04); 
@@ -318,10 +344,10 @@ fn main() {
                         codes.push(0xB8 + 0x03); 
                         let inner = op2.into_inner().next().unwrap();
                         let b = to_u16(inner.as_str(), inner.as_rule());
-                        let b0 = (0x00FF & b) as u8;
-                        let b1 = (0xFF00 & b >> 8) as u8;
-                        codes.push(b0);
-                        codes.push(b1);
+                        let b0 =  0x00FF & b; 
+                        let b1 = (0xFF00 & b) >> 8;
+                        codes.push(b0 as u8);
+                        codes.push(b1 as u8);
                         current_address += 3;
                     },
                     _ => unreachable!()
@@ -346,6 +372,26 @@ fn main() {
                     let address = labels_map.get(label).unwrap();
                     let bb = 0x00FF & address - (idx as u16 + 1);
                     writer.write_fmt(format_args!(r"\x{:02X}", &bb)).unwrap();
+                },
+                None => writer.write_fmt(format_args!(r"\x{:02X}", b)).unwrap()
+            }
+        } else if b == 0xFE {
+            match address_map.get(&((idx as u32) + 0x7c00)) {
+                //MOV label 1
+                Some(label) => {
+                    let address = labels_map.get(label).unwrap();
+                    let bb = address;
+                    let b0 =  0x00FF & bb;
+                    let b1 = (0xFF00 & bb) >> 8;
+                    writer.write_fmt(format_args!(r"\x{:02X}", &(b0 as u8))).unwrap();
+                    writer.write_fmt(format_args!(r"\x{:02X}", &(b1 as u8))).unwrap();
+                },
+                None => writer.write_fmt(format_args!(r"\x{:02X}", b)).unwrap()
+            }
+        } else if b == 0xFD {
+            match address_map.get(&((idx as u32) + 0x7c00)) {
+                //MOV label 2
+                Some(label) => {
                 },
                 None => writer.write_fmt(format_args!(r"\x{:02X}", b)).unwrap()
             }

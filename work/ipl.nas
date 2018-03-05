@@ -15,22 +15,22 @@ DW 18
 DW 2
 DD 0
 DD 2880
-DB 0x00, 0x00, 0x29
+DB 0, 0, 0x29
 DD 0xffffffff
 DB "HELLO-OS   "
 DB "FAT12   "
 RESB 18
 
 entry:
-DB 0xb8,0x00,0x00
+MOV AX,0
 MOV SS,AX
 MOV SP,0x7c00
 MOV DS, AX
 MOV ES, AX
-DB 0xbe,0x74,0x7c
+MOV SI, msg
 
 putloop:
-DB 0x8a, 0x04
+MOV AL,[SI]
 ADD SI,1
 CMP AL,0
 JE fin
