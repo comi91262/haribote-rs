@@ -78,6 +78,12 @@ jmp_exp = _{ jmp ~ ws* ~ label }
 je = { "JE" }
 je_exp = _{ je ~ ws* ~ label }
 
+jae = { "JAE" }
+jae_exp = _{ jae ~ ws* ~ label }
+
+jbe = { "JBE" }
+jbe_exp = _{ jbe ~ ws* ~ label }
+
 dist_label = _{ label ~ colon }
 
 
@@ -108,7 +114,7 @@ mov_exp = _{ mov ~ ws* ~ (reg8  ~ ws* ~ comma ~ ws* ~ imm8
 
 
 exp = _{ ws* ~ 
-    (db_exp | dw_exp | dd_exp | resb_exp | org_exp | jmp_exp | je_exp | dist_label 
+    (db_exp | dw_exp | dd_exp | resb_exp | org_exp | jmp_exp | je_exp | jae_exp | jbe_exp | dist_label 
      | int_exp | add_exp | cmp_exp | hlt | mov_exp )
         ~ ws* | empty }
 
