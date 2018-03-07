@@ -84,6 +84,9 @@ jae_exp = _{ jae ~ ws* ~ label }
 jbe = { "JBE" }
 jbe_exp = _{ jbe ~ ws* ~ label }
 
+jnc = { "JNC" }
+jnc_exp = _{ jnc ~ ws* ~ label }
+
 dist_label = _{ label ~ colon }
 
 

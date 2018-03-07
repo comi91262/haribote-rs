@@ -213,6 +213,13 @@ fn main() {
                 address_map.insert((current_address+1) as u32, label.to_string());
                 current_address += 2;
             },
+            Rule::jnc => {
+                let label = pairs.next().unwrap().as_str();
+                codes.push(0x73);
+                codes.push(0xFF);  //tmp
+                address_map.insert((current_address+1) as u32, label.to_string());
+                current_address += 2;
+            },
             Rule::je => {
                 let label = pairs.next().unwrap().as_str();
                 codes.push(0x74);
