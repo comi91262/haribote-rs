@@ -15,12 +15,11 @@ dependencies = [
 
 [tasks.generate]
 script = [
-"../nask-rs/target/release/nask-rs < ipl.nas > ipl.tmp",
+"../nask-rs/target/release/nask-rs < ipl.nas > ipl.bin",
 ]
 
 [tasks.to_bin]
 script = [
-"printf \"%b\" `cat ipl.tmp` > ipl.bin",
 "cat ipl.bin tail.bin > helloos.img"
 ]
 
@@ -46,7 +45,7 @@ dependencies = [
 [tasks.rm]
 command = "rm"
 args = [
-	"-f", "ipl.tmp", "ipl.bin", "helloos.img", "ipl.hex"
+	"-f", "ipl.bin", "helloos.img", "ipl.hex"
 ]
 
 

@@ -1,10 +1,11 @@
 [package]
 name = "nask-rs"
-version = "0.1.1"
+version = "0.1.2"
 authors = ["ykonomi <hgKaguyaToupako4er@gmail.com>"]
 
 [dependencies]
 pest = "1.0.3"
 pest_derive = "1.0.3"
+byteorder = "1"
 
 
