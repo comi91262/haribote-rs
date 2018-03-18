@@ -73,7 +73,7 @@ pipelineflush:
 
 ; bootpackの転送
 
-		MOV		ESI,_rust_main	; 転送元
+		MOV		ESI,bootpack	; 転送元
 		MOV		EDI,BOTPAK		; 転送先
 		MOV		ECX,512*1024/4
 		CALL	memcpy
@@ -143,4 +143,4 @@ GDTR0:
 		DD		GDT0
 
 		ALIGNB	16
-_rust_main:
+bootpack:
