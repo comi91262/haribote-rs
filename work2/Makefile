@@ -22,7 +22,7 @@ asmhead.bin : asmhead.nas Makefile
 	$(NASK) asmhead.nas asmhead.bin asmhead.lst
 
 body.bin: 
-	$(LD) -n --gc-sections -e rust_main -Ttext 0x280000 -o body.bin libbody.a
+	$(LD) -Map hoge.txt --oformat=binary -o body.bin  -e rust_main body-77281653ed7631ea.o
 
 #   $(HOME)/local/i386-elf/bin/ld -n --gc-sections -e rust_main -T linker.ld -o body.bin body-e6e43481cde3b4d7.o multiboot_header.o
 #	ld -n --gc-sections -T linker.ld -o body.bin body-06ded3dca6281142.o multiboot_header.asm 
@@ -49,7 +49,7 @@ clean :
 	-$(DEL) *.bin
 	-$(DEL) *.lst
 	-$(DEL) haribote.sys
-	-$(DEL) rust_os.img
+	-$(DEL) haribote.img
 	-$(DEL) haribote_rs.sys
 
 

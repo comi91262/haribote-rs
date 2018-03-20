@@ -2,10 +2,12 @@
 #![no_std]
 // This library defines the builtin functions, so it would be a shame for
 // LLVM to optimize these function calls to themselves!
-#![no_builtins]
+//#![no_builtins]
 // NOTE `linkage = weak` doesn't work for Windows (COFF) or MacOS (MachO). It seems it only works
 // for ELF objects.
-#![cfg_attr(all(feature = "weak", not(windows), not(target_os = "macos")), feature(linkage))]
+//#![cfg_attr(all(feature = "weak", not(windows), not(target_os = "macos")), feature(linkage))]
+
+extern crate rlibc;
 
 
 #[no_mangle]
