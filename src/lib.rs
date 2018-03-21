@@ -12,16 +12,17 @@ extern crate rlibc;
 
 #[no_mangle]
 pub extern fn rust_main() {
-    let hello = b"Hello World!";
-    let color_byte = 0x07;//white  0x1f; // white foreground, blue background
-    let mut hello_colored = [color_byte; 24];
-    for (i, char_byte) in hello.into_iter().enumerate() {
-        hello_colored[i*2] = *char_byte;
-    }
+    //let hello = b"Hello World!";
+    //let color_byte = 0x07;//white  0x1f; // white foreground, blue background
+    //let mut hello_colored = [color_byte; 24];
+    //for (i, char_byte) in hello.into_iter().enumerate() {
+    //    hello_colored[i*2] = *char_byte;
+    //}
 
-    // write `Hello World!` to the center of the VGA text buffer
-    let buffer_ptr = (0xa0000 + 100 + 100) as *mut _;
-    unsafe { *buffer_ptr = hello_colored };
+    //// write `Hello World!` to the center of the VGA text buffer
+    //let buffer_ptr = (0xa0000 + 100 + 100) as *mut _;
+    ////let buffer_ptr = (0xa00000) as *mut _;
+    //unsafe { *buffer_ptr = hello_colored };
     loop{}
 }
 

@@ -42,6 +42,7 @@ img :
 
 run :
 	$(MAKE) img
+	$(COPY) haribote.img $(TOOLPATH)qemu/fdimage0.bin
 	$(QEMU) -L . -m 32 -localtime -vga std -fda $(TOOLPATH)qemu/fdimage0.bin
 
 
@@ -50,7 +51,6 @@ clean :
 	-$(DEL) *.lst
 	-$(DEL) haribote.sys
 	-$(DEL) haribote.img
-	-$(DEL) haribote_rs.sys
 
 
 src_only :
