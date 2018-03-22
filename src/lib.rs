@@ -1,5 +1,7 @@
 #![feature(lang_items)]
 #![no_std]
+#![feature(asm)]
+
 // This library defines the builtin functions, so it would be a shame for
 // LLVM to optimize these function calls to themselves!
 //#![no_builtins]
@@ -25,6 +27,39 @@ pub extern fn rust_main() {
     //unsafe { *buffer_ptr = hello_colored };
     loop{}
 }
+
+
+
+#[no_mangle]
+pub extern fn write_mem8(){
+    unsafe {
+        asm!("mov 4(%esp), %ecx");
+        asm!("mov 8(%esp), %al");
+        asm!("mov %al, (%ecx)");
+    }
+}
+
+///; naskfunc
+///; TAB=4
+///
+///[FORMAT "WCOFF"]				; オブジェクトファイルを作るモード	
+///[INSTRSET "i486p"]				; 486の命令まで使いたいという記述
+///[BITS 32]						; 32ビットモード用の機械語を作らせる
+///[FILE "naskfunc.nas"]			; ソースファイル名情報
+///
+///		GLOBAL	_io_hlt,_write_mem8
+///
+///[SECTION .text]
+///
+///_io_hlt:	; void io_hlt(void);
+///		HLT
+///		RET
+///
+///_write_mem8:	; void write_mem8(int addr, int data);
+///		MOV		ECX,[ESP+4]		; [ESP+4]にaddrが入っているのでそれをECXに読み込む
+///		MOV		AL,[ESP+8]		; [ESP+8]にdataが入っているのでそれをALに読み込む
+///		MOV		[ECX],AL
+///		RET
 
 #[lang = "eh_personality"] #[no_mangle] pub extern fn eh_personality() {}
 #[lang = "panic_fmt"] #[no_mangle] pub extern fn panic_fmt() -> ! {loop{}}
