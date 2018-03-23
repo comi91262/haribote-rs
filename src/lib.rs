@@ -14,6 +14,10 @@ extern crate rlibc;
 
 #[no_mangle]
 pub extern fn rust_main() {
+    for i in 0xa0000..0xb0000 {
+        write_mem8(i, 15);
+    }
+
     //let hello = b"Hello World!";
     //let color_byte = 0x07;//white  0x1f; // white foreground, blue background
     //let mut hello_colored = [color_byte; 24];
@@ -28,38 +32,57 @@ pub extern fn rust_main() {
     loop{}
 }
 
+//void io_hlt(void);
+//void write_mem8(int addr, int data);
+//
+//void HariMain(void)
+//{
+//	int i; /* Ïé¾BiÆ¢¤ÏÍA32rbgÌ®^ */
+//
+//	for (i = 0xa0000; i <= 0xaffff; i++) {
+//		write_mem8(i, 15); /* MOV BYTE [i],15 */
+//	}
+//
+//	for (;;) {
+//		io_hlt();
+//	}
+//}
+
 
 
 #[no_mangle]
-pub extern fn write_mem8(){
+#[inline(never)]
+pub extern fn write_mem8(addr: u32, data: u32){
     unsafe {
-        asm!("mov 4(%esp), %ecx");
-        asm!("mov 8(%esp), %al");
-        asm!("mov %al, (%ecx)");
+        let mut ecx: u32;
+        let al:   u8;
+        asm!("movl $0, %ecx":"={ecx}"(ecx)   :"0"(addr));
+        asm!("movb $0, %al" :"={al}"(al):"0"(data));
+        asm!("mov %al, (%ecx)":"={ecx}"(ecx):"%al"(al));
     }
 }
 
-///; naskfunc
-///; TAB=4
-///
-///[FORMAT "WCOFF"]				; オブジェクトファイルを作るモード	
-///[INSTRSET "i486p"]				; 486の命令まで使いたいという記述
-///[BITS 32]						; 32ビットモード用の機械語を作らせる
-///[FILE "naskfunc.nas"]			; ソースファイル名情報
-///
-///		GLOBAL	_io_hlt,_write_mem8
-///
-///[SECTION .text]
-///
-///_io_hlt:	; void io_hlt(void);
-///		HLT
-///		RET
-///
-///_write_mem8:	; void write_mem8(int addr, int data);
-///		MOV		ECX,[ESP+4]		; [ESP+4]にaddrが入っているのでそれをECXに読み込む
-///		MOV		AL,[ESP+8]		; [ESP+8]にdataが入っているのでそれをALに読み込む
-///		MOV		[ECX],AL
-///		RET
+//; naskfunc
+//; TAB=4
+//
+//[FORMAT "WCOFF"]				; オブジェクトファイルを作るモード	
+//[INSTRSET "i486p"]				; 486の命令まで使いたいという記述
+//[BITS 32]						; 32ビットモード用の機械語を作らせる
+//[FILE "naskfunc.nas"]			; ソースファイル名情報
+//
+//		GLOBAL	_io_hlt,_write_mem8
+//
+//[SECTION .text]
+//
+//_io_hlt:	; void io_hlt(void);
+//		HLT
+//		RET
+//
+//_write_mem8:	; void write_mem8(int addr, int data);
+//		MOV		ECX,[ESP+4]		; [ESP+4]にaddrが入っているのでそれをECXに読み込む
+//		MOV		AL,[ESP+8]		; [ESP+8]にdataが入っているのでそれをALに読み込む
+//		MOV		[ECX],AL
+//		RET
 
 #[lang = "eh_personality"] #[no_mangle] pub extern fn eh_personality() {}
 #[lang = "panic_fmt"] #[no_mangle] pub extern fn panic_fmt() -> ! {loop{}}
