@@ -1,6 +1,0 @@
-[tasks.run]
-command = "qemu-system-i386"
-args    = [
-"-L", ".", "-m", "32", "-localtime", "-vga", "std", "-fda", "fdimage0.bin"
-]
-
