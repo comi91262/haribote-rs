@@ -13,7 +13,7 @@ DEL      = rm -f
 default :
 	$(MAKE) img
 
-#¿¿¿¿¿¿
+RUST_TARGET_PATH=$(pwd) RUSTFLAGS='--emit=asm --emit=obj -C relocation-model=static' xargo build --target new_os --release
 
 ipl10.bin : ipl10.nas Makefile
 	$(NASK) ipl10.nas ipl10.bin ipl10.lst
