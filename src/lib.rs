@@ -54,14 +54,29 @@ pub extern fn rust_main() {
 #[inline(never)]
 pub extern fn write_mem8(addr: u32, data: u32){
     unsafe {
-        let mut ecx: u32;
+        let ecx: u32;
         let al:   u8;
-        asm!("movl $0, %ecx":"={ecx}"(ecx)   :"0"(addr));
-        asm!("movb $0, %al" :"={al}"(al):"0"(data));
-        asm!("mov %al, (%ecx)":"={ecx}"(ecx):"%al"(al));
+        asm!("movl $0, %ecx":"={ecx}"(ecx):"0"(addr)::"volatile");
+        asm!("movb $0, %al" :"={al}"(al):"0"(data)::"volatile");
+        asm!("movb %al, (%ecx)"::"%al"(al)::"volatile");
     }
 }
 
+/*
+write_mem8:
+	movb	8(%esp), %al
+	movl	4(%esp), %ecx
+	#APP
+	movl	%ecx, %ecx
+	#NO_APP
+	#APP
+	movb	%al, %al
+	#NO_APP
+	#APP
+	movb	%al, (%ecx)
+	#NO_APP
+	retl
+    */
 //; naskfunc
 //; TAB=4
 //
