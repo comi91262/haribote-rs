@@ -2,38 +2,29 @@
 #![no_std]
 #![feature(asm)]
 
-//void HariMain(void)
-//{
-//	char *vram;
-//	int xsize, ysize;
-//
-//	init_palette();
-//	vram = (char *) 0xa0000;
-//	xsize = 320;
-//	ysize = 200;
-//
-//	boxfill8(vram, xsize, COL8_008484,  0,         0,          xsize -  1, ysize - 29);
-//	boxfill8(vram, xsize, COL8_C6C6C6,  0,         ysize - 28, xsize -  1, ysize - 28);
-//	boxfill8(vram, xsize, COL8_FFFFFF,  0,         ysize - 27, xsize -  1, ysize - 27);
-//	boxfill8(vram, xsize, COL8_C6C6C6,  0,         ysize - 26, xsize -  1, ysize -  1);
-//
-//	boxfill8(vram, xsize, COL8_FFFFFF,  3,         ysize - 24, 59,         ysize - 24);
-//	boxfill8(vram, xsize, COL8_FFFFFF,  2,         ysize - 24,  2,         ysize -  4);
-//	boxfill8(vram, xsize, COL8_848484,  3,         ysize -  4, 59,         ysize -  4);
-//	boxfill8(vram, xsize, COL8_848484, 59,         ysize - 23, 59,         ysize -  5);
-//	boxfill8(vram, xsize, COL8_000000,  2,         ysize -  3, 59,         ysize -  3);
-//	boxfill8(vram, xsize, COL8_000000, 60,         ysize - 24, 60,         ysize -  3);
-//
-//	boxfill8(vram, xsize, COL8_848484, xsize - 47, ysize - 24, xsize -  4, ysize - 24);
-//	boxfill8(vram, xsize, COL8_848484, xsize - 47, ysize - 23, xsize - 47, ysize -  4);
-//	boxfill8(vram, xsize, COL8_FFFFFF, xsize - 47, ysize -  3, xsize -  4, ysize -  3);
-//	boxfill8(vram, xsize, COL8_FFFFFF, xsize -  3, ysize - 24, xsize -  3, ysize -  3);
-//
-//	for (;;) {
-// = io_hlt();
-//	}
-//}
+const COL8_000000: u8 = 0;
+const COL8_FF0000: u8 = 1;
+const COL8_00FF00: u8 = 2;
+const COL8_FFFF00: u8 = 3;
+const COL8_0000FF: u8 = 4;
+const COL8_FF00FF: u8 = 5;
+const COL8_00FFFF: u8 = 6;
+const COL8_FFFFFF: u8 = 7;
+const COL8_C6C6C6: u8 = 8;
+const COL8_840000: u8 = 9;
+const COL8_008400: u8 = 10;
+const COL8_848400: u8 = 11;
+const COL8_000084: u8 = 12;
+const COL8_840084: u8 = 13;
+const COL8_008484: u8 = 14;
+const COL8_848484: u8 = 15;
 
+
+//struct BOOTINFO {
+//	char cyls, leds, vmode, reserve;
+//	short scrnx, scrny;
+//	char *vram;
+//};
 struct BOOTINFO {
     cyls: u8,
     leds: u8,
@@ -41,9 +32,21 @@ struct BOOTINFO {
     reserve: u8,
     scrnx: u16,
     scrny: u16,
-    vram: u32
+    vram: *const usize
 }
 
+//void HariMain(void)
+//{
+//	char *vram;
+//	int xsize, ysize;
+//
+//	init_palette();
+//	init_screen(binfo->vram, binfo->scrnx, binfo->scrny);
+//
+//
+//	for (;;) {
+//	}
+//}
 #[no_mangle]
 #[warn(unused_assignments)] 
 pub extern fn rust_main() {
@@ -51,27 +54,13 @@ pub extern fn rust_main() {
     let binfo = 0x0ff0 as *const (BOOTINFO);
 
     init_palette();
-
-
-
-	//binfo_scrnx = (short *) 0x0ff4;
-	//binfo_scrny = (short *) 0x0ff6;
-	//binfo_vram = (int *) 0x0ff8;
-	//xsize = *binfo_scrnx;
-	//ysize = *binfo_scrny;
-	//vram = (char *) *binfo_vram;
-
-	//pushl	$655360
-	//init_screen(vram, xsize, ysize);
-// let origin = Point { x: 0, y: 0 }; // origin: Point
-    //let vram = 0xa0000 as *const u32;
     unsafe {
-        let x = (*binfo).scrnx as u32;
-        let y = (*binfo).scrny as u32;
-        let vram = ((*binfo + 8).vram) as *const u32;
-        init_screen(*vram as *const u32, x, y);
+        //0x0ff8
+        init_screen(
+            *(0x0ff8 as *const u32) as *const u32, //*((*binfo).vram)!
+            (*binfo).scrnx as u32,
+            (*binfo).scrny as u32);
     }
-
 
     loop{}
 }
@@ -129,7 +118,7 @@ pub extern fn init_palette(){
 #[inline(never)]
 pub extern fn set_palette(start: u8, end: u8)//, rgb: &[u8; 48])
 {
-    const rgb: [u8; 16 * 3] = [
+    static RGB: [u8; 16 * 3] = [    // !! because of --release, this program works.
         0x00, 0x00, 0x00,	/*  0:黒 */
         0xff, 0x00, 0x00,	/*  1:明るい赤 */
         0x00, 0xff, 0x00,	/*  2:明るい緑 */
@@ -151,7 +140,7 @@ pub extern fn set_palette(start: u8, end: u8)//, rgb: &[u8; 48])
     let eflags = io_load_eflags();	/* 割り込み許可フラグの値を記録する */
     io_cli();                   	/* 許可フラグを0にして割り込み禁止にする */
     io_out8(0x03c8, start);
-    let p = &rgb as *const u8;
+    let p = &RGB as *const u8;
     for i in 0..48 {
         unsafe {
             io_out8(0x03c9,  *p.offset(i as isize) / 4);
@@ -276,10 +265,6 @@ pub extern fn io_store_eflags(eflags: u32){
 pub extern fn init_screen(vram: *const u32, x: u32, y: u32)
 {
 
-    let COL8_000000 = 0; let COL8_FF0000 = 1; let COL8_00FF00 = 2; let COL8_FFFF00 = 3;
-    let COL8_0000FF = 4; let COL8_FF00FF = 5; let COL8_00FFFF = 6; let COL8_FFFFFF = 7;
-    let COL8_C6C6C6 = 8; let COL8_840000 = 9; let COL8_008400 = 10;let COL8_848400 = 11;
-    let COL8_000084 = 12;let COL8_840084 = 13;let COL8_008484 = 14;let COL8_848484 = 15;
 
 	boxfill8(vram, x, COL8_008484,  0,         0,      x -  1, y - 29);
 	boxfill8(vram, x, COL8_C6C6C6,  0,         y - 28, x -  1, y - 28);
