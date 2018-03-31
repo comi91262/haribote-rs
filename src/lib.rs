@@ -34,36 +34,44 @@
 //	}
 //}
 
+struct BOOTINFO {
+    cyls: u8,
+    leds: u8,
+    vmode: u8,
+    reserve: u8,
+    scrnx: u16,
+    scrny: u16,
+    vram: u32
+}
+
 #[no_mangle]
 #[warn(unused_assignments)] 
 pub extern fn rust_main() {
+
+    let binfo = 0x0ff0 as *const (BOOTINFO);
+
     init_palette();
 
-    let vram: *const u32 = 0xa0000 as *const u32;
-    let xsize = 320;
-    let ysize = 200;
 
-    let COL8_000000 = 0; let COL8_FF0000 = 1; let COL8_00FF00 = 2; let COL8_FFFF00 = 3;
-    let COL8_0000FF = 4; let COL8_FF00FF = 5; let COL8_00FFFF = 6; let COL8_FFFFFF = 7;
-    let COL8_C6C6C6 = 8; let COL8_840000 = 9; let COL8_008400 = 10;let COL8_848400 = 11;
-    let COL8_000084 = 12;let COL8_840084 = 13;let COL8_008484 = 14;let COL8_848484 = 15;
 
-	boxfill8(vram, xsize, COL8_008484,  0,         0,          xsize -  1, ysize - 29);
-	boxfill8(vram, xsize, COL8_C6C6C6,  0,         ysize - 28, xsize -  1, ysize - 28);
-	boxfill8(vram, xsize, COL8_FFFFFF,  0,         ysize - 27, xsize -  1, ysize - 27);
-	boxfill8(vram, xsize, COL8_C6C6C6,  0,         ysize - 26, xsize -  1, ysize -  1);
+	//binfo_scrnx = (short *) 0x0ff4;
+	//binfo_scrny = (short *) 0x0ff6;
+	//binfo_vram = (int *) 0x0ff8;
+	//xsize = *binfo_scrnx;
+	//ysize = *binfo_scrny;
+	//vram = (char *) *binfo_vram;
 
-	boxfill8(vram, xsize, COL8_FFFFFF,  3,         ysize - 24, 59,         ysize - 24);
-	boxfill8(vram, xsize, COL8_FFFFFF,  2,         ysize - 24,  2,         ysize -  4);
-	boxfill8(vram, xsize, COL8_848484,  3,         ysize -  4, 59,         ysize -  4);
-	boxfill8(vram, xsize, COL8_848484, 59,         ysize - 23, 59,         ysize -  5);
-	boxfill8(vram, xsize, COL8_000000,  2,         ysize -  3, 59,         ysize -  3);
-	boxfill8(vram, xsize, COL8_000000, 60,         ysize - 24, 60,         ysize -  3);
+	//pushl	$655360
+	//init_screen(vram, xsize, ysize);
+// let origin = Point { x: 0, y: 0 }; // origin: Point
+    //let vram = 0xa0000 as *const u32;
+    unsafe {
+        let x = (*binfo).scrnx as u32;
+        let y = (*binfo).scrny as u32;
+        let vram = ((*binfo + 8).vram) as *const u32;
+        init_screen(*vram as *const u32, x, y);
+    }
 
-	boxfill8(vram, xsize, COL8_848484, xsize - 47, ysize - 24, xsize -  4, ysize - 24);
-	boxfill8(vram, xsize, COL8_848484, xsize - 47, ysize - 23, xsize - 47, ysize -  4);
-	boxfill8(vram, xsize, COL8_FFFFFF, xsize - 47, ysize -  3, xsize -  4, ysize -  3);
-	boxfill8(vram, xsize, COL8_FFFFFF, xsize -  3, ysize - 24, xsize -  3, ysize -  3);
 
     loop{}
 }
@@ -263,6 +271,34 @@ pub extern fn io_store_eflags(eflags: u32){
     }
 }
 
+#[no_mangle]
+#[inline(never)]
+pub extern fn init_screen(vram: *const u32, x: u32, y: u32)
+{
+
+    let COL8_000000 = 0; let COL8_FF0000 = 1; let COL8_00FF00 = 2; let COL8_FFFF00 = 3;
+    let COL8_0000FF = 4; let COL8_FF00FF = 5; let COL8_00FFFF = 6; let COL8_FFFFFF = 7;
+    let COL8_C6C6C6 = 8; let COL8_840000 = 9; let COL8_008400 = 10;let COL8_848400 = 11;
+    let COL8_000084 = 12;let COL8_840084 = 13;let COL8_008484 = 14;let COL8_848484 = 15;
+
+	boxfill8(vram, x, COL8_008484,  0,         0,      x -  1, y - 29);
+	boxfill8(vram, x, COL8_C6C6C6,  0,         y - 28, x -  1, y - 28);
+	boxfill8(vram, x, COL8_FFFFFF,  0,         y - 27, x -  1, y - 27);
+	boxfill8(vram, x, COL8_C6C6C6,  0,         y - 26, x -  1, y -  1);
+
+	boxfill8(vram, x, COL8_FFFFFF,  3,         y - 24, 59,         y - 24);
+	boxfill8(vram, x, COL8_FFFFFF,  2,         y - 24,  2,         y -  4);
+	boxfill8(vram, x, COL8_848484,  3,         y -  4, 59,         y -  4);
+	boxfill8(vram, x, COL8_848484, 59,         y - 23, 59,         y -  5);
+	boxfill8(vram, x, COL8_000000,  2,         y -  3, 59,         y -  3);
+	boxfill8(vram, x, COL8_000000, 60,         y - 24, 60,         y -  3);
+
+	boxfill8(vram, x, COL8_848484, x - 47, y - 24, x -  4, y - 24);
+	boxfill8(vram, x, COL8_848484, x - 47, y - 23, x - 47, y -  4);
+	boxfill8(vram, x, COL8_FFFFFF, x - 47, y -  3, x -  4, y -  3);
+	boxfill8(vram, x, COL8_FFFFFF, x -  3, y - 24, x -  3, y -  3);
+
+}
 
 #[lang = "eh_personality"] #[no_mangle] pub extern fn eh_personality() {}
 #[lang = "panic_fmt"] #[no_mangle] pub extern fn panic_fmt() -> ! {loop{}}
