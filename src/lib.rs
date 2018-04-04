@@ -60,7 +60,15 @@ pub extern fn rust_main() {
             *(0x0ff8 as *const u32) as *const u32, //*((*binfo).vram)!
             (*binfo).scrnx as u32,
             (*binfo).scrny as u32);
+        putfont8(
+            *(0x0ff8 as *const u32) as *const u32, //*((*binfo).vram)!
+            (*binfo).scrnx as u32,
+            8, 
+            8,
+            COL8_FFFFFF,
+            "ABC 123");
     }
+
 
     loop{}
 }
@@ -285,6 +293,49 @@ pub extern fn init_screen(vram: *const u32, x: u32, y: u32)
 
 }
 
+//void putfont8(char *vram, int xsize, int x, int y, char c, char *font)
+//{
+//	int i;
+//	char *p, d /* data */;
+//	for (i = 0; i < 16; i++) {
+//		p = vram + (y + i) * xsize + x;
+//		d = font[i];
+//		if ((d & 0x80) != 0) { p[0] = c; }
+//		if ((d & 0x40) != 0) { p[1] = c; }
+//		if ((d & 0x20) != 0) { p[2] = c; }
+//		if ((d & 0x10) != 0) { p[3] = c; }
+//		if ((d & 0x08) != 0) { p[4] = c; }
+//		if ((d & 0x04) != 0) { p[5] = c; }
+//		if ((d & 0x02) != 0) { p[6] = c; }
+//		if ((d & 0x01) != 0) { p[7] = c; }
+//	}
+//	return;
+//}
+fn putfont8(vram: *const u32, xsize: u32, x: u32, y: u32, c: u8, font: &str){
+   
+
+    static font_A: [u8; 16] = [
+        0x00, 0x18, 0x18, 0x18, 0x18, 0x24, 0x24, 0x24,
+        0x24, 0x7e, 0x42, 0x42, 0x42, 0xe7, 0x00, 0x00
+    ];
+
+    let font = font_A.as_ptr();
+
+    unsafe {
+        for i in 0..16 {
+            let p = vram as u32 + (y + i) * xsize + x;
+            let d = *((font as u32 + i) as *const u8);
+            if (d & 0x80) != 0 { *(p as *mut u8) = c; }
+            if (d & 0x40) != 0 { *((p as u32 + 1) as *mut u8) = c; }
+            if (d & 0x20) != 0 { *((p as u32 + 2) as *mut u8) = c; }
+            if (d & 0x10) != 0 { *((p as u32 + 3) as *mut u8) = c; }
+            if (d & 0x08) != 0 { *((p as u32 + 4) as *mut u8) = c; }
+            if (d & 0x04) != 0 { *((p as u32 + 5) as *mut u8) = c; }
+            if (d & 0x02) != 0 { *((p as u32 + 6) as *mut u8) = c; }
+            if (d & 0x01) != 0 { *((p as u32 + 7) as *mut u8) = c; }
+        }
+    }
+}
 #[lang = "eh_personality"] #[no_mangle] pub extern fn eh_personality() {}
 #[lang = "panic_fmt"] #[no_mangle] pub extern fn panic_fmt() -> ! {loop{}}
 
