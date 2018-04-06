@@ -314,7 +314,7 @@ pub extern fn init_screen(vram: *const u32, x: u32, y: u32)
 fn putfont8(vram: *const u32, xsize: u32, x: u32, y: u32, c: u8, font: &str){
    
 
-    static font_A: [u8; 16] = [
+    let font_A: [u8; 16] = [
         0x00, 0x18, 0x18, 0x18, 0x18, 0x24, 0x24, 0x24,
         0x24, 0x7e, 0x42, 0x42, 0x42, 0xe7, 0x00, 0x00
     ];
