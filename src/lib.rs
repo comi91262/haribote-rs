@@ -2,6 +2,8 @@
 #![no_std]
 #![feature(asm)]
 
+extern crate rlibc;
+
 const COL8_000000: u8 = 0;
 const COL8_FF0000: u8 = 1;
 const COL8_00FF00: u8 = 2;
@@ -51,10 +53,13 @@ struct BOOTINFO {
 #[warn(unused_assignments)] 
 pub extern fn rust_main() {
 
+    let mut mcursor: [u8; 256] = [0; 256];
     let binfo = 0x0ff0 as *const (BOOTINFO);
 
     init_palette();
     unsafe {
+        let mx = ((*binfo).scrnx as u32 - 16) / 2;
+        let my = ((*binfo).scrny as u32 - 28 - 16) / 2;
         //0x0ff8
         init_screen(
             *(0x0ff8 as *const u32) as *const u32, //*((*binfo).vram)!
@@ -67,6 +72,15 @@ pub extern fn rust_main() {
             8,
             COL8_FFFFFF,
             "ABC 123");
+        init_mouse_cursor8(mcursor.as_mut_ptr(), COL8_008484);
+        putblock8_8(*(0x0ff8 as *const u32) as *const u32, //*((*binfo).vram)!
+                    (*binfo).scrnx as u32,
+                    16,
+                    16,
+                    mx,
+                    my, 
+                    mcursor.as_mut_ptr(),
+                    16);
     }
 
 
@@ -336,9 +350,73 @@ fn putfont8(vram: *const u32, xsize: u32, x: u32, y: u32, c: u8, font: &str){
         }
     }
 }
+
+fn init_mouse_cursor8(mouse: *mut u8, bc: u8){
+
+	let cursor = [
+        [b'*',b'*',b'*',b'*',b'*',b'*',b'*',b'*',b'*',b'*',b'*',b'*',b'*',b'*',b'.',b'.'],
+        [b'*',b'0',b'0',b'0',b'0',b'0',b'0',b'0',b'0',b'0',b'0',b'0',b'*',b'.',b'.',b'.'],
+        [b'*',b'0',b'0',b'0',b'0',b'0',b'0',b'0',b'0',b'0',b'0',b'*',b'.',b'.',b'.',b'.'],
+        [b'*',b'0',b'0',b'0',b'0',b'0',b'0',b'0',b'0',b'0',b'*',b'.',b'.',b'.',b'.',b'.'],
+        [b'*',b'0',b'0',b'0',b'0',b'0',b'0',b'0',b'0',b'*',b'.',b'.',b'.',b'.',b'.',b'.'],
+        [b'*',b'0',b'0',b'0',b'0',b'0',b'0',b'0',b'*',b'.',b'.',b'.',b'.',b'.',b'.',b'.'],
+        [b'*',b'0',b'0',b'0',b'0',b'0',b'0',b'0',b'*',b'.',b'.',b'.',b'.',b'.',b'.',b'.'],
+        [b'*',b'0',b'0',b'0',b'0',b'0',b'0',b'0',b'0',b'*',b'.',b'.',b'.',b'.',b'.',b'.'],
+        [b'*',b'0',b'0',b'0',b'0',b'*',b'*',b'0',b'0',b'0',b'*',b'.',b'.',b'.',b'.',b'.'],
+        [b'*',b'0',b'0',b'0',b'*',b'.',b'.',b'*',b'0',b'0',b'0',b'*',b'.',b'.',b'.',b'.'],
+        [b'*',b'0',b'0',b'*',b'.',b'.',b'.',b'.',b'*',b'0',b'0',b'0',b'*',b'.',b'.',b'.'],
+        [b'*',b'0',b'*',b'.',b'.',b'.',b'.',b'.',b'.',b'*',b'0',b'0',b'0',b'*',b'.',b'.'],
+        [b'*',b'*',b'.',b'.',b'.',b'.',b'.',b'.',b'.',b'.',b'*',b'0',b'0',b'0',b'*',b'.'],
+        [b'*',b'.',b'.',b'.',b'.',b'.',b'.',b'.',b'.',b'.',b'.',b'*',b'0',b'0',b'0',b'*'],
+        [b'.',b'.',b'.',b'.',b'.',b'.',b'.',b'.',b'.',b'.',b'.',b'.',b'*',b'0',b'0',b'*'],
+        [b'.',b'.',b'.',b'.',b'.',b'.',b'.',b'.',b'.',b'.',b'.',b'.',b'.',b'*',b'*',b'*'],
+    ];
+
+        let p = cursor.as_ptr();
+
+
+        unsafe {
+            for y in 0..16 {
+                for x in 0..16 {
+                    if *((p as u32 + y * 16 + x) as *const u8) == b'*' {
+                        *((mouse as u32 + y * 16 + x) as *mut u8)  = COL8_000000
+                    }
+                    if *((p as u32 + y * 16 + x) as *const u8) == b'0' {
+                        *((mouse as u32 + y * 16 + x) as *mut u8)  = COL8_FFFFFF
+                    }
+                    if *((p as u32 + y * 16 + x) as *const u8) == b'.' {
+                        *((mouse as u32 + y * 16 + x) as *mut u8)  = bc
+                    }
+                }
+            }
+        }
+}
+
+fn putblock8_8(vram: *const u32, vxsize: u32, pxsize: u32, pysize: u32, 
+               px0: u32, py0: u32, buf: *mut u8, bxsize: u32){
+
+    for y in 0..pysize {
+        for x in 0..pxsize {
+            unsafe {
+                *((vram as u32 + (py0 + y) * vxsize + (px0 + x)) as *mut u32) =
+                    *((buf as u32 + y * bxsize + x) as *mut u32)
+            }
+        }
+    }
+}
 #[lang = "eh_personality"] #[no_mangle] pub extern fn eh_personality() {}
 #[lang = "panic_fmt"] #[no_mangle] pub extern fn panic_fmt() -> ! {loop{}}
 
+#[cfg_attr(all(feature = "weak", not(windows), not(target_os = "macos")), linkage = "weak")]
+#[no_mangle]
+pub unsafe extern fn memset(s: *mut u8, c: i32, n: usize) -> *mut u8 {
+    let mut i = 0;
+    while i < n {
+        *s.offset(i as isize) = c as u8;
+        i += 1;
+    }
+    return s;
+}
 
 //_io_in8:	; int io_in8(int port);
 //		MOV		EDX,[ESP+4]		; port
