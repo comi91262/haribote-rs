@@ -5,19 +5,19 @@
 extern crate rlibc;
 
 const COL8_000000: u8 = 0;
-const COL8_FF0000: u8 = 1;
-const COL8_00FF00: u8 = 2;
-const COL8_FFFF00: u8 = 3;
-const COL8_0000FF: u8 = 4;
-const COL8_FF00FF: u8 = 5;
-const COL8_00FFFF: u8 = 6;
+const _COL8_FF0000: u8 = 1;
+const _COL8_00FF00: u8 = 2;
+const _COL8_FFFF00: u8 = 3;
+const _COL8_0000FF: u8 = 4;
+const _COL8_FF00FF: u8 = 5;
+const _COL8_00FFFF: u8 = 6;
 const COL8_FFFFFF: u8 = 7;
 const COL8_C6C6C6: u8 = 8;
-const COL8_840000: u8 = 9;
-const COL8_008400: u8 = 10;
-const COL8_848400: u8 = 11;
-const COL8_000084: u8 = 12;
-const COL8_840084: u8 = 13;
+const _COL8_840000: u8 = 9;
+const _COL8_008400: u8 = 10;
+const _COL8_848400: u8 = 11;
+const _COL8_000084: u8 = 12;
+const _COL8_840084: u8 = 13;
 const COL8_008484: u8 = 14;
 const COL8_848484: u8 = 15;
 
@@ -28,10 +28,10 @@ const COL8_848484: u8 = 15;
 //	char *vram;
 //};
 struct BOOTINFO {
-    cyls: u8,
-    leds: u8,
-    vmode: u8,
-    reserve: u8,
+    _cyls: u8,
+    _leds: u8,
+    _vmode: u8,
+    _reserve: u8,
     scrnx: u16,
     scrny: u16,
     vram: *const usize
@@ -62,18 +62,17 @@ pub extern fn rust_main() {
         let my = ((*binfo).scrny as u32 - 28 - 16) / 2;
         //0x0ff8
         init_screen(
-            *(0x0ff8 as *const u32) as *const u32, //*((*binfo).vram)!
+            *(0x0ff8 as *const u32) as *const u32, //*((*binfo).vram)
             (*binfo).scrnx as u32,
             (*binfo).scrny as u32);
-        putfont8(
-            *(0x0ff8 as *const u32) as *const u32, //*((*binfo).vram)!
+        put_font_big_a(
+            *(0x0ff8 as *const u32) as *const u32, //*((*binfo).vram)
             (*binfo).scrnx as u32,
             8, 
             8,
-            COL8_FFFFFF,
-            "ABC 123");
+            COL8_FFFFFF);
         init_mouse_cursor8(mcursor.as_mut_ptr(), COL8_008484);
-        putblock8_8(*(0x0ff8 as *const u32) as *const u32, //*((*binfo).vram)!
+        putblock8_8(*(0x0ff8 as *const u32) as *const u32, //*((*binfo).vram)
                     (*binfo).scrnx as u32,
                     16,
                     16,
@@ -140,7 +139,7 @@ pub extern fn init_palette(){
 #[inline(never)]
 pub extern fn set_palette(start: u8, end: u8)//, rgb: &[u8; 48])
 {
-    static RGB: [u8; 16 * 3] = [    // !! because of --release, this program works.
+    let rgb: [u8; 16 * 3] = [   
         0x00, 0x00, 0x00,	/*  0:黒 */
         0xff, 0x00, 0x00,	/*  1:明るい赤 */
         0x00, 0xff, 0x00,	/*  2:明るい緑 */
@@ -162,24 +161,16 @@ pub extern fn set_palette(start: u8, end: u8)//, rgb: &[u8; 48])
     let eflags = io_load_eflags();	/* 割り込み許可フラグの値を記録する */
     io_cli();                   	/* 許可フラグを0にして割り込み禁止にする */
     io_out8(0x03c8, start);
-    let p = &RGB as *const u8;
-    for i in 0..48 {
+    let p = rgb.as_ptr();
+    for i in start..(end + 1) {
         unsafe {
-            io_out8(0x03c9,  *p.offset(i as isize) / 4);
+            io_out8(0x03c9,  *p.offset((3 * i    ) as isize) / 4);
+            io_out8(0x03c9,  *p.offset((3 * i + 1) as isize) / 4);
+            io_out8(0x03c9,  *p.offset((3 * i + 2) as isize) / 4);
         }
     }
-//    for i in start..(end + 1) {
-//       unsafe {
-//           io_out8(0x03c9,  *p.offset(3 as isize));
-//           io_out8(0x03c9,  *p.offset(4 as isize));
-//           io_out8(0x03c9,  *p.offset(5 as isize));
-//           //io_out8(0x03c9, *p.offset((3 * i    ) as isize) );
-//           //io_out8(0x03c9, *p.offset((3 * i + 1) as isize) );
-//           //io_out8(0x03c9, *p.offset((3 * i + 2) as isize) );
-//       }
-//    }
-//
-	io_store_eflags(eflags);	/* 割り込み許可フラグを元に戻す */
+
+    io_store_eflags(eflags);	/* 割り込み許可フラグを元に戻す */
 }
 
 //void boxfill8(unsigned char *vram, int xsize, unsigned char c, int x0, int y0, int x1, int y1)
@@ -205,82 +196,6 @@ pub extern fn boxfill8(vram: *const u32, xsize: u32, c: u8, x0: u32, y0: u32, x1
     }
 }
 
-//_io_cli:	; void io_cli(void);
-//		CLI
-//		RET
-#[no_mangle]
-#[inline(never)]
-pub extern fn io_cli(){
-    unsafe {
-        asm!("cli");
-        asm!("ret");
-    }
-}
-
-//_io_sti:	; void io_sti(void);
-//		STI
-//		RET
-#[no_mangle]
-#[inline(never)]
-pub extern fn io_sti(){
-    unsafe {
-        asm!("sti");
-        asm!("ret");
-    }
-}
-
-
-
-//_io_out8:	; void io_out8(int port, int data);
-//		MOV		EDX,[ESP+4]		; port
-//		MOV		AL,[ESP+8]		; data
-//		OUT		DX,AL
-//		RET
-#[no_mangle]
-#[inline(never)]
-pub extern fn io_out8(port: u32, data: u8){
-    let edx: u32;
-    let al : u8;
-    unsafe {
-        asm!("movl $0,   %edx" :"={edx}"(edx):"0"(port)::"volatile");
-        asm!("movb $0,   %al"  :"={al}"(al)  :"0"(data)::"volatile");
-        asm!("out  %al,  %dx");
-        asm!("ret");
-
-    }
-}
-
-//_io_load_eflags:	; int io_load_eflags(void);
-//		PUSHFD		; PUSH EFLAGS Æ¢¤Ó¡
-//		POP		EAX
-//		RET
-#[no_mangle]
-#[inline(never)]
-pub extern fn io_load_eflags() -> u32 {
-    let eax;
-    unsafe {
-        asm!("pushfd");
-        asm!("pop %eax":"={eax}"(eax));
-    }
-    eax
-}
-
-//_io_store_eflags:	; void io_store_eflags(int eflags);
-//		MOV		EAX,[ESP+4]
-//		PUSH	EAX
-//		POPFD		; POP EFLAGS Æ¢¤Ó¡
-//		RET
-#[no_mangle]
-#[inline(never)]
-pub extern fn io_store_eflags(eflags: u32){
-    let eax: u32;
-    unsafe {
-        asm!("movl $0, %eax":"={eax}"(eax):"0"(eflags)::"volatile");
-        asm!("push %eax");
-        asm!("popfd");
-        asm!("ret");
-    }
-}
 
 #[no_mangle]
 #[inline(never)]
@@ -288,17 +203,17 @@ pub extern fn init_screen(vram: *const u32, x: u32, y: u32)
 {
 
 
-	boxfill8(vram, x, COL8_008484,  0,         0,      x -  1, y - 29);
-	boxfill8(vram, x, COL8_C6C6C6,  0,         y - 28, x -  1, y - 28);
-	boxfill8(vram, x, COL8_FFFFFF,  0,         y - 27, x -  1, y - 27);
-	boxfill8(vram, x, COL8_C6C6C6,  0,         y - 26, x -  1, y -  1);
+	boxfill8(vram, x, COL8_008484,  0, 0,      x -  1, y - 29);
+	boxfill8(vram, x, COL8_C6C6C6,  0, y - 28, x -  1, y - 28);
+	boxfill8(vram, x, COL8_FFFFFF,  0, y - 27, x -  1, y - 27);
+	boxfill8(vram, x, COL8_C6C6C6,  0, y - 26, x -  1, y -  1);
 
-	boxfill8(vram, x, COL8_FFFFFF,  3,         y - 24, 59,         y - 24);
-	boxfill8(vram, x, COL8_FFFFFF,  2,         y - 24,  2,         y -  4);
-	boxfill8(vram, x, COL8_848484,  3,         y -  4, 59,         y -  4);
-	boxfill8(vram, x, COL8_848484, 59,         y - 23, 59,         y -  5);
-	boxfill8(vram, x, COL8_000000,  2,         y -  3, 59,         y -  3);
-	boxfill8(vram, x, COL8_000000, 60,         y - 24, 60,         y -  3);
+	boxfill8(vram, x, COL8_FFFFFF,  3, y - 24, 59, y - 24);
+	boxfill8(vram, x, COL8_FFFFFF,  2, y - 24,  2, y -  4);
+	boxfill8(vram, x, COL8_848484,  3, y -  4, 59, y -  4);
+	boxfill8(vram, x, COL8_848484, 59, y - 23, 59, y -  5);
+	boxfill8(vram, x, COL8_000000,  2, y -  3, 59, y -  3);
+	boxfill8(vram, x, COL8_000000, 60, y - 24, 60, y -  3);
 
 	boxfill8(vram, x, COL8_848484, x - 47, y - 24, x -  4, y - 24);
 	boxfill8(vram, x, COL8_848484, x - 47, y - 23, x - 47, y -  4);
@@ -325,15 +240,14 @@ pub extern fn init_screen(vram: *const u32, x: u32, y: u32)
 //	}
 //	return;
 //}
-fn putfont8(vram: *const u32, xsize: u32, x: u32, y: u32, c: u8, font: &str){
+fn put_font_big_a(vram: *const u32, xsize: u32, x: u32, y: u32, c: u8){
    
-
-    let font_A: [u8; 16] = [
+    let font_big_a: [u8; 16] = [
         0x00, 0x18, 0x18, 0x18, 0x18, 0x24, 0x24, 0x24,
         0x24, 0x7e, 0x42, 0x42, 0x42, 0xe7, 0x00, 0x00
     ];
 
-    let font = font_A.as_ptr();
+    let font = font_big_a.as_ptr();
 
     unsafe {
         for i in 0..16 {
@@ -353,7 +267,7 @@ fn putfont8(vram: *const u32, xsize: u32, x: u32, y: u32, c: u8, font: &str){
 
 fn init_mouse_cursor8(mouse: *mut u8, bc: u8){
 
-	let cursor = [
+    let cursor = [
         [b'*',b'*',b'*',b'*',b'*',b'*',b'*',b'*',b'*',b'*',b'*',b'*',b'*',b'*',b'.',b'.'],
         [b'*',b'0',b'0',b'0',b'0',b'0',b'0',b'0',b'0',b'0',b'0',b'0',b'*',b'.',b'.',b'.'],
         [b'*',b'0',b'0',b'0',b'0',b'0',b'0',b'0',b'0',b'0',b'0',b'*',b'.',b'.',b'.',b'.'],
@@ -404,8 +318,84 @@ fn putblock8_8(vram: *const u32, vxsize: u32, pxsize: u32, pysize: u32,
         }
     }
 }
+
 #[lang = "eh_personality"] #[no_mangle] pub extern fn eh_personality() {}
 #[lang = "panic_fmt"] #[no_mangle] pub extern fn panic_fmt() -> ! {loop{}}
+
+//_io_cli:	; void io_cli(void);
+//		CLI
+//		RET
+#[no_mangle]
+#[inline(never)]
+pub extern fn io_cli(){
+    unsafe {
+        asm!("cli");
+        asm!("ret");
+    }
+}
+
+//_io_sti:	; void io_sti(void);
+//		STI
+//		RET
+#[no_mangle]
+#[inline(never)]
+pub extern fn io_sti(){
+    unsafe {
+        asm!("sti");
+        asm!("ret");
+    }
+}
+
+//_io_out8:	; void io_out8(int port, int data);
+//		MOV		EDX,[ESP+4]		; port
+//		MOV		AL,[ESP+8]		; data
+//		OUT		DX,AL
+//		RET
+#[no_mangle]
+#[inline(never)]
+pub extern fn io_out8(port: u32, data: u8){
+    let _edx: u32;
+    let _al : u8;
+    unsafe {
+        asm!("movl $0,   %edx" :"={edx}"(_edx):"0"(port)::"volatile");
+        asm!("movb $0,   %al"  :"={al}"(_al)  :"0"(data)::"volatile");
+        asm!("out  %al,  %dx");
+        asm!("ret");
+
+    }
+}
+
+//_io_load_eflags:	; int io_load_eflags(void);
+//		PUSHFD		; PUSH EFLAGS Æ¢¤Ó¡
+//		POP		EAX
+//		RET
+#[no_mangle]
+#[inline(never)]
+pub extern fn io_load_eflags() -> u32 {
+    let eax;
+    unsafe {
+        asm!("pushfd");
+        asm!("pop %eax":"={eax}"(eax));
+    }
+    eax
+}
+
+//_io_store_eflags:	; void io_store_eflags(int eflags);
+//		MOV		EAX,[ESP+4]
+//		PUSH	EAX
+//		POPFD		; POP EFLAGS Æ¢¤Ó¡
+//		RET
+#[no_mangle]
+#[inline(never)]
+pub extern fn io_store_eflags(eflags: u32){
+    let _eax: u32;
+    unsafe {
+        asm!("movl $0, %eax":"={eax}"(_eax):"0"(eflags)::"volatile");
+        asm!("push %eax");
+        asm!("popfd");
+        asm!("ret");
+    }
+}
 
 #[cfg_attr(all(feature = "weak", not(windows), not(target_os = "macos")), linkage = "weak")]
 #[no_mangle]
