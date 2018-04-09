@@ -22,11 +22,6 @@ const COL8_008484: u8 = 14;
 const COL8_848484: u8 = 15;
 
 
-//struct BOOTINFO {
-//	char cyls, leds, vmode, reserve;
-//	short scrnx, scrny;
-//	char *vram;
-//};
 struct BOOTINFO {
     _cyls: u8,
     _leds: u8,
@@ -36,6 +31,24 @@ struct BOOTINFO {
     scrny: u16,
     vram: *const usize
 }
+
+struct SEGMENT_DESCRIPTOR {
+    limit_low: u16,
+    base_low:  u16,
+    base_mid:  u8,
+    access_right: u8,
+    limit_high: u8,
+    base_high: u8
+}
+
+struct GATE_DESCRIPTOR {
+    offset_low:  u16,
+    selector:    u16,
+    dw_count:     u8,
+    access_right: u8,
+    offset_high: u16
+}
+
 
 //void HariMain(void)
 //{
@@ -57,6 +70,7 @@ pub extern fn rust_main() {
     let binfo = 0x0ff0 as *const (BOOTINFO);
 
     init_palette();
+	init_gdtidt();
     unsafe {
         let mx = ((*binfo).scrnx as u32 - 16) / 2;
         let my = ((*binfo).scrny as u32 - 28 - 16) / 2;
@@ -88,24 +102,6 @@ pub extern fn rust_main() {
 
 //void init_palette(void)
 //{
-//	static unsigned char table_rgb[16 * 3] = {
-//		0x00, 0x00, 0x00,	/*  0:黒 */
-//		0xff, 0x00, 0x00,	/*  1:明るい赤 */
-//		0x00, 0xff, 0x00,	/*  2:明るい緑 */
-//		0xff, 0xff, 0x00,	/*  3:明るい黄色 */
-//		0x00, 0x00, 0xff,	/*  4:明るい青 */
-//		0xff, 0x00, 0xff,	/*  5:明るい紫 */
-//		0x00, 0xff, 0xff,	/*  6:明るい水色 */
-//		0xff, 0xff, 0xff,	/*  7:白 */
-//		0xc6, 0xc6, 0xc6,	/*  8:明るい灰色 */
-//		0x84, 0x00, 0x00,	/*  9:暗い赤 */
-//		0x00, 0x84, 0x00,	/* 10:暗い緑 */
-//		0x84, 0x84, 0x00,	/* 11:暗い黄色 */
-//		0x00, 0x00, 0x84,	/* 12:暗い青 */
-//		0x84, 0x00, 0x84,	/* 13:暗い紫 */
-//		0x00, 0x84, 0x84,	/* 14:暗い水色 */
-//		0x84, 0x84, 0x84	/* 15:暗い灰色 */
-//	};
 //	set_palette(0, 15, table_rgb);
 //	return;
 //
@@ -288,7 +284,6 @@ fn init_mouse_cursor8(mouse: *mut u8, bc: u8){
 
         let p = cursor.as_ptr();
 
-
         unsafe {
             for y in 0..16 {
                 for x in 0..16 {
@@ -316,6 +311,57 @@ fn putblock8_8(vram: *const u32, vxsize: u32, pxsize: u32, pysize: u32,
                     *((buf as u32 + y * bxsize + x) as *mut u32)
             }
         }
+    }
+}
+
+fn init_gdtidt(){
+    let gdt = 0x00270000 as *mut (SEGMENT_DESCRIPTOR);
+    let idt = 0x0026f800 as *mut (GATE_DESCRIPTOR);
+        
+    //setup GDT
+    unsafe {
+        for i in 0..8192 {
+            set_segmdesc(gdt.offset(i), 0, 0, 0);
+        }
+        set_segmdesc(gdt.offset(1), 0xffffffff, 0x00000000, 0x4092);
+        set_segmdesc(gdt.offset(2), 0x0007ffff, 0x00280000, 0x409a);
+    }
+	load_gdtr(0xffff, 0x00270000);
+
+    //setup IDT
+    for i in 0..256 {
+        unsafe {
+            set_gatedesc(idt.offset(i), 0, 0, 0);
+        }
+    }
+	load_idtr(0x7ff, 0x0026f800);
+
+}
+
+fn set_segmdesc(sd: *mut SEGMENT_DESCRIPTOR, mut limit: u32, base: u32, mut ar: u32){
+
+    if limit > 0xfffff {
+        ar |= 0x8000; /* G_bit = 1 */
+        limit /=  0x1000;
+    }
+
+    unsafe {
+        (*sd).limit_low    = (limit & 0xffff) as u16;
+        (*sd).base_low     = (base & 0xffff)  as u16;
+        (*sd).base_mid     = ((base >> 16) as u8) & 0xff;
+        (*sd).access_right = (ar & 0xff) as u8;
+        (*sd).limit_high   = ((limit >> 16) & 0x0f) as u8 | ((ar >> 8) & 0xf0) as u8;
+        (*sd).base_high    = ((base >> 24)  & 0xff) as u8;
+    }
+}
+
+fn set_gatedesc(gd: *mut GATE_DESCRIPTOR, offset: u32, selector: u32, ar: u32){
+    unsafe {
+        (*gd).offset_low   = (offset & 0xffff) as u16;
+        (*gd).selector     = selector as u16;
+        (*gd).dw_count     = ((ar >> 8) & 0xff) as u8;
+        (*gd).access_right = (ar & 0xff) as u8;
+        (*gd).offset_high  = ((offset >> 16) & 0xffff) as u16;
     }
 }
 
@@ -397,6 +443,34 @@ pub extern fn io_store_eflags(eflags: u32){
     }
 }
 
+//_load_gdtr:		; void load_gdtr(int limit, int addr);
+//		MOV		AX,[ESP+4]		; limit
+//		MOV		[ESP+6],AX
+//		LGDT	[ESP+6]
+//		RET
+#[no_mangle]
+#[inline(never)]
+pub extern fn load_gdtr(limit: u32, mut addr: u32){
+    let ax: u16;
+    unsafe {
+        asm!("mov $0, ax":"={ax}"(ax):"0"(limit)::"volatile");
+        asm!("mov $0, 6(exp)":"={6(exp)}"(addr):"0"(ax)::"volatile");
+        asm!("lgdt $0"::"0"(addr)::"volatile");
+        asm!("ret");
+    }
+}
+
+#[no_mangle]
+#[inline(never)]
+pub extern fn load_idtr(limit: u32, addr: u32){
+    unsafe {
+        asm!("mov 4(exp), ax");
+        asm!("mov ax, 6(exp)");
+        asm!("lidt 6(exp)");
+        asm!("ret");
+    }
+}
+
 #[cfg_attr(all(feature = "weak", not(windows), not(target_os = "macos")), linkage = "weak")]
 #[no_mangle]
 pub unsafe extern fn memset(s: *mut u8, c: i32, n: usize) -> *mut u8 {
@@ -424,17 +498,6 @@ pub unsafe extern fn memset(s: *mut u8, c: i32, n: usize) -> *mut u8 {
 //        asm!(ret);
 //    }
 //}
-//_io_out16:	; void io_out16(int port, int data);
-//		MOV		EDX,[ESP+4]		; port
-//		MOV		EAX,[ESP+8]		; data
-//		OUT		DX,AX
-//		RET
-//
-//_io_out32:	; void io_out32(int port, int data);
-//		MOV		EDX,[ESP+4]		; port
-//		MOV		EAX,[ESP+8]		; data
-//		OUT		DX,EAX
-//		RET
 //#[no_mangle]
 //#[inline(never)]
 //pub extern pub extern fn write_mem8(addr: u32, data: u32){
