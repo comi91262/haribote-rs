@@ -452,21 +452,29 @@ pub extern fn io_store_eflags(eflags: u32){
 #[inline(never)]
 pub extern fn load_gdtr(limit: u32, mut addr: u32){
     let ax: u16;
+    let mut exp: u32;
     unsafe {
-        asm!("mov $0, ax":"={ax}"(ax):"0"(limit)::"volatile");
-        asm!("mov $0, 6(exp)":"={6(exp)}"(addr):"0"(ax)::"volatile");
-        asm!("lgdt $0"::"0"(addr)::"volatile");
+        asm!("movw $0, %ax":"={ax}"(ax):"0"(limit)::"volatile");
+        asm!("movw %ax, $1":"=r"(addr):"{ax}"(ax),"r"(addr)::"volatile");
+        asm!("lgdtw m32"::"m32"(addr)::);
         asm!("ret");
+//        asm!("add $2, $0"
+//             : "=r"(c)
+//             : "0"(a), "r"(b)
+//             );
     }
 }
 
 #[no_mangle]
 #[inline(never)]
-pub extern fn load_idtr(limit: u32, addr: u32){
+pub extern fn load_idtr(limit: u32, mut addr: u32){
+    let ax: u16;
+    let mut exp: u32;
     unsafe {
-        asm!("mov 4(exp), ax");
-        asm!("mov ax, 6(exp)");
-        asm!("lidt 6(exp)");
+        asm!("movw $0, %ax":"={ax}"(ax):"0"(limit)::"volatile");
+        asm!("movw %ax, $1":"=r"(addr):"{ax}"(ax),"r"(addr)::"volatile");
+        exp = addr;
+        asm!("lidtw idt"::"0"(addr)::"volatile");
         asm!("ret");
     }
 }
