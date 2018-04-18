@@ -160,7 +160,8 @@ pub extern fn set_palette(start: u8, end: u8)//, rgb: &[u8; 48])
     let p = rgb.as_ptr();
     for i in start..(end + 1) {
         unsafe {
-            io_out8(0x03c9,  *p.offset((3 * i    ) as isize) / 4);
+            io_out8(0x03c9,  rgb[3 * i as usize] / 4);
+            //io_out8(0x03c9,  *p.offset((3 * i    ) as isize) / 4);
             io_out8(0x03c9,  *p.offset((3 * i + 1) as isize) / 4);
             io_out8(0x03c9,  *p.offset((3 * i + 2) as isize) / 4);
         }
@@ -368,6 +369,7 @@ fn set_gatedesc(gd: *mut GATE_DESCRIPTOR, offset: u32, selector: u32, ar: u32){
 #[lang = "eh_personality"] #[no_mangle] pub extern fn eh_personality() {}
 #[lang = "panic_fmt"] #[no_mangle] pub extern fn panic_fmt() -> ! {loop{}}
 
+
 //_io_cli:	; void io_cli(void);
 //		CLI
 //		RET
@@ -403,10 +405,12 @@ pub extern fn io_out8(port: u32, data: u8){
     let _edx: u32;
     let _al : u8;
     unsafe {
+      //  asm!("mov 4(%esp), %edx");
+      //  asm!("mov 8(%esp), %al");
+      //  asm!("out %al, %dx");
         asm!("movl $0,   %edx" :"={edx}"(_edx):"0"(port)::"volatile");
         asm!("movb $0,   %al"  :"={al}"(_al)  :"0"(data)::"volatile");
         asm!("out  %al,  %dx");
-        asm!("ret");
 
     }
 }
@@ -450,14 +454,19 @@ pub extern fn io_store_eflags(eflags: u32){
 //		RET
 #[no_mangle]
 #[inline(never)]
+#[cfg(any(target_arch = "x86"))]
 pub extern fn load_gdtr(limit: u32, mut addr: u32){
     let ax: u16;
-    let mut exp: u32;
     unsafe {
-        asm!("movw $0, %ax":"={ax}"(ax):"0"(limit)::"volatile");
-        asm!("movw %ax, $1":"=r"(addr):"{ax}"(ax),"r"(addr)::"volatile");
-        asm!("lgdtw m32"::"m32"(addr)::);
+        asm!("mov 4(%esp), %ax");
+        asm!("mov %ax, 6(%esp)");
+        asm!("lgdt 6(%esp)");
         asm!("ret");
+        //asm!("mov $0, %ax"::"0"(limit as u16):"ax":);
+        //asm!("movw %ax, $1":"=r"(addr as u16):"{ax}"(ax),"r"(addr as u16):"ax":"volatile");
+        //asm!("movw %ax, $1":"=r"(addr):"{ax}"(ax),"r"(addr)::"volatile");
+        //asm!("lgdtw m32"::"m32"(addr)::);
+        //asm!("ret");
 //        asm!("add $2, $0"
 //             : "=r"(c)
 //             : "0"(a), "r"(b)
@@ -471,24 +480,18 @@ pub extern fn load_idtr(limit: u32, mut addr: u32){
     let ax: u16;
     let mut exp: u32;
     unsafe {
-        asm!("movw $0, %ax":"={ax}"(ax):"0"(limit)::"volatile");
-        asm!("movw %ax, $1":"=r"(addr):"{ax}"(ax),"r"(addr)::"volatile");
-        exp = addr;
-        asm!("lidtw idt"::"0"(addr)::"volatile");
+        asm!("mov 4(%esp), %ax");
+        asm!("mov %ax, 6(%esp)");
+        asm!("lidt 6(%esp)");
         asm!("ret");
+        //asm!("movw $0, %ax":"={ax}"(ax):"0"(limit)::"volatile");
+        //asm!("movw %ax, $1":"=r"(addr):"{ax}"(ax),"r"(addr)::"volatile");
+        //exp = addr;
+        //asm!("lidtw idt"::"0"(addr)::"volatile");
+        //asm!("ret");
     }
 }
 
-#[cfg_attr(all(feature = "weak", not(windows), not(target_os = "macos")), linkage = "weak")]
-#[no_mangle]
-pub unsafe extern fn memset(s: *mut u8, c: i32, n: usize) -> *mut u8 {
-    let mut i = 0;
-    while i < n {
-        *s.offset(i as isize) = c as u8;
-        i += 1;
-    }
-    return s;
-}
 
 //_io_in8:	; int io_in8(int port);
 //		MOV		EDX,[ESP+4]		; port
