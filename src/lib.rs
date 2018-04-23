@@ -4,6 +4,8 @@
 
 extern crate rlibc;
 
+
+
 const COL8_000000: u8 = 0;
 const _COL8_FF0000: u8 = 1;
 const _COL8_00FF00: u8 = 2;
@@ -69,7 +71,7 @@ pub extern fn rust_main() {
     let mut mcursor: [u8; 256] = [0; 256];
     let binfo = 0x0ff0 as *const (BOOTINFO);
 
-    init_palette();
+    set_palette(0, 15);
 	init_gdtidt();
     unsafe {
         let mx = ((*binfo).scrnx as u32 - 16) / 2;
@@ -98,22 +100,6 @@ pub extern fn rust_main() {
 
 
     loop{}
-}
-
-//void init_palette(void)
-//{
-//	set_palette(0, 15, table_rgb);
-//	return;
-//
-//	/* static char 命令は、データにしか使えないけどDB命令相当 */
-//}
-
-#[no_mangle]
-#[inline(never)]
-pub extern fn init_palette(){
-
-    set_palette(0, 15);//, &table_rgb);
-
 }
 
 //void set_palette(int start, int end, unsigned char *rgb)
@@ -159,10 +145,12 @@ pub extern fn set_palette(start: u8, end: u8)//, rgb: &[u8; 48])
     io_out8(0x03c8, start);
     let p = rgb.as_ptr();
     for i in start..(end + 1) {
+        io_out8(0x03c9,  rgb[3 * i as usize] / 4);
+        io_out8(0x03c9,  rgb[3 * i as usize + 1] / 4);
+        //io_out8(0x03c9,  rgb[3 * i as usize + 2] / 4);
         unsafe {
-            //io_out8(0x03c9,  rgb[3 * i as usize] / 4);
-            io_out8(0x03c9,  *p.offset((3 * i    ) as isize) / 4);
-            io_out8(0x03c9,  *p.offset((3 * i + 1) as isize) / 4);
+            //io_out8(0x03c9,  *p.offset((3 * i    ) as isize) / 4);
+            //io_out8(0x03c9,  *p.offset((3 * i + 1) as isize) / 4);
             io_out8(0x03c9,  *p.offset((3 * i + 2) as isize) / 4);
         }
     }
@@ -378,7 +366,6 @@ fn set_gatedesc(gd: *mut GATE_DESCRIPTOR, offset: u32, selector: u32, ar: u32){
 pub extern fn io_cli(){
     unsafe {
         asm!("cli");
-        asm!("ret");
     }
 }
 
@@ -390,7 +377,6 @@ pub extern fn io_cli(){
 pub extern fn io_sti(){
     unsafe {
         asm!("sti");
-        asm!("ret");
     }
 }
 
@@ -443,7 +429,6 @@ pub extern fn io_store_eflags(eflags: u32){
         asm!("movl $0, %eax":"={eax}"(_eax):"0"(eflags)::"volatile");
         asm!("push %eax");
         asm!("popfd");
-        asm!("ret");
     }
 }
 
@@ -461,12 +446,10 @@ pub extern fn load_gdtr(limit: u32, mut addr: u32){
         asm!("mov 4(%esp), %ax");
         asm!("mov %ax, 6(%esp)");
         asm!("lgdt 6(%esp)");
-        asm!("ret");
         //asm!("mov $0, %ax"::"0"(limit as u16):"ax":);
         //asm!("movw %ax, $1":"=r"(addr as u16):"{ax}"(ax),"r"(addr as u16):"ax":"volatile");
         //asm!("movw %ax, $1":"=r"(addr):"{ax}"(ax),"r"(addr)::"volatile");
         //asm!("lgdtw m32"::"m32"(addr)::);
-        //asm!("ret");
 //        asm!("add $2, $0"
 //             : "=r"(c)
 //             : "0"(a), "r"(b)
@@ -483,7 +466,6 @@ pub extern fn load_idtr(limit: u32, mut addr: u32){
         asm!("mov 4(%esp), %ax");
         asm!("mov %ax, 6(%esp)");
         asm!("lidt 6(%esp)");
-        asm!("ret");
         //asm!("movw $0, %ax":"={ax}"(ax):"0"(limit)::"volatile");
         //asm!("movw %ax, $1":"=r"(addr):"{ax}"(ax),"r"(addr)::"volatile");
         //exp = addr;
