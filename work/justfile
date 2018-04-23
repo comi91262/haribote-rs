@@ -13,8 +13,8 @@ build:
 	{{TOOL_PATH}}nask ipl10.nas ipl10.bin ipl10.lst
 	{{TOOL_PATH}}nask asmhead.nas asmhead.bin asmhead.lst
 	cd ../. ;RUST_TARGET_PATH="$(pwd)" xargo build  --target new_os --release --manifest-path="Cargo.toml"
-	cp ../target/new_os/release/deps/body-06ded3dca6281142.o .
-	{{LD}} -Map body.map --oformat=binary -o body.bin  -e rust_main body-06ded3dca6281142.o
+	cp ../target/new_os/release/libbody.a .
+	{{LD}} -T toy.ld -Map body.map -o body.bin  -e rust_main libbody.a
 	cat asmhead.bin body.bin > haribote.sys
 	{{TOOL_PATH}}edimg imgin:{{TOOL_PATH}}fdimg0at.tek \
 		wbinimg src:ipl10.bin len:512 from:0 to:0 \
