@@ -7,3 +7,4 @@ authors = ["ykonomi <hgKaguyaToupako4er@gmail.com>"]
 crate-type = ["staticlib"]
 
 [dependencies]
+rlibc = "1.0"

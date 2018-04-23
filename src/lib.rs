@@ -2,7 +2,7 @@
 #![no_std]
 #![feature(asm)]
 
-//extern crate rlibc;
+extern crate rlibc;
 
 const COL8_000000: u8 = 0;
 const _COL8_FF0000: u8 = 1;
@@ -492,16 +492,6 @@ pub extern fn load_idtr(limit: u32, mut addr: u32){
     }
 }
 
-#[cfg_attr(all(feature = "weak", not(windows), not(target_os = "macos")), linkage = "weak")]
-#[no_mangle]
-pub unsafe extern fn memset(s: *mut u8, c: i32, n: usize) -> *mut u8 {
-   let mut i = 0;
-    while i < n {
-        *s.offset(i as isize) = c as u8;
-        i += 1;
-    }
-    return s;
-}
 
 //_io_in8:	; int io_in8(int port);
 //		MOV		EDX,[ESP+4]		; port
