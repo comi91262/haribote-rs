@@ -12,8 +12,8 @@ export RUSTFLAGS='--emit=asm --emit=obj -C relocation-model=static'
 build:
 	{{TOOL_PATH}}nask ipl10.nas ipl10.bin ipl10.lst
 	{{TOOL_PATH}}nask asmhead.nas asmhead.bin asmhead.lst
-	cd ../. ;RUST_TARGET_PATH="$(pwd)" xargo build  --target new_os --release --manifest-path="Cargo.toml"
-	cp ../target/new_os/release/libbody.a .
+	cd ../body ;RUST_TARGET_PATH="$(pwd)" xargo build  --target new_os --release --manifest-path="Cargo.toml"
+	cp ../body/target/new_os/release/libbody.a .
 	{{LD}} -gc-sections -T toy.ld -Map body.map -o body.bin -e rust_main libbody.a
 	cat asmhead.bin body.bin > haribote.sys
 	{{TOOL_PATH}}edimg imgin:{{TOOL_PATH}}fdimg0at.tek \
@@ -25,9 +25,9 @@ run: build
 	{{QEMU}} {{QEMU_ARG}} haribote.img
 
 clean:
-	cd ../.; xargo clean
+	cd ../body/.; xargo clean
 	rm -f *.bin
-	rm -f *.o
+	rm -f *.a
 	rm -f *.lst
 	rm -f *.map
 	rm -f haribote.img 
